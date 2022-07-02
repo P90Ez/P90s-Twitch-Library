@@ -11,21 +11,21 @@ namespace P90Ez.Twitch.IRC
         /// Username in lowercase.
         /// </summary>
         public string TargetUsername { get; }
-        public string Channel { get; }
+        public string ChannelName { get; }
         /// <summary>
         /// OPTIONAL! Use "Channel" instead. (Will only return a positive value if set)
         /// </summary>
         public long ChannelID { get; } = -1;
         public string MessageID { get; }
         public DateTime TimeStamp { get; } 
-        private string rawdata { get; }
+        public string RawData { get; }
         public irc_clearmsg(string rawdata)
         {
-            this.rawdata = rawdata;
+            this.RawData = rawdata;
             //          0                                                                   1           2           3       4
             //@login=ronni;room-id=;target-msg-id=abc-123-def;tmi-sent-ts=1642720582342 :tmi.twitch.tv CLEARMSG #dallas :HeyGuys
             string[] splitdata = rawdata.Split(' ');
-            Channel = splitdata[3].Remove(0,1);
+            ChannelName = splitdata[3].Remove(0,1);
             for(int i = 4; i < splitdata.Length; i++)
             {
                 if (i == 4)

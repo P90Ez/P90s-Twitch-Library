@@ -7,7 +7,7 @@ namespace P90Ez.Twitch.IRC
     public class irc_clearchat
     {
         public long ChannelID { get; }
-        public string Channel { get; }
+        public string ChannelName { get; }
         /// <summary>
         /// Only returns a non-empty-string when a user was timeouted/banned.
         /// </summary>
@@ -35,10 +35,10 @@ namespace P90Ez.Twitch.IRC
             UserBan,
             UserTimeout,
         }
-        public string rawdata { get; }
+        public string RawData { get; }
         public irc_clearchat(string rawdata)
         {
-            this.rawdata = rawdata;
+            this.RawData = rawdata;
             string[] splitdata = rawdata.Split(' ');
             string[] tags = splitdata[0].Remove(0, 1).Split(';');
             foreach (string tagraw in tags)
@@ -80,7 +80,7 @@ namespace P90Ez.Twitch.IRC
                             break;
                     }
             }
-            Channel = splitdata[3].Remove(0, 1);
+            ChannelName = splitdata[3].Remove(0, 1);
             if(splitdata.Length >= 5)
                 TargetUsername = splitdata[4].Remove(0,1);
         }

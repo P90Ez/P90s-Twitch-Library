@@ -263,7 +263,7 @@ namespace P90Ez.Twitch.IRC
                     string[] targetchannelraw = notice.NoticeMessage.Split(' ');
                     if (targetchannelraw.Length > 3) return;
                     string targetchannel = targetchannelraw[2].Remove(targetchannelraw[2].Length - 1);
-                    Events.OnHost?.Invoke(this, new irc_CostumEventArgs.HostArgs() { ChannelName = notice.Channel, TargetChannelName = targetchannel });
+                    Events.OnHost?.Invoke(this, new irc_CostumEventArgs.HostArgs() { ChannelName = notice.ChannelName, TargetChannelName = targetchannel });
                     break;
             }
         }
@@ -287,6 +287,18 @@ namespace P90Ez.Twitch.IRC
             irc_clearchat clearchat = new irc_clearchat(inputline);
             if (clearchat == null) return;
             Events.OnCLEARCHAT?.Invoke(this, clearchat);
+            switch (clearchat.ClearChatType)
+            {
+                case irc_clearchat.ClearChatTypes.UserBan:
+                    Events.UserBanned?.Invoke(this, clearchat);
+                    break;
+                case irc_clearchat.ClearChatTypes.UserTimeout:
+                    Events.UserTimeOut?.Invoke(this, clearchat);
+                    break;
+                case irc_clearchat.ClearChatTypes.RemovedAllMessages:
+                    Events.ChatCleared?.Invoke(this, clearchat);
+                    break;
+            }
         }
 
         private void OnPRIVMSG(string dataraw)

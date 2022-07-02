@@ -15,7 +15,7 @@ namespace P90Ez.Twitch.IRC
         /// Only returns a positive number if set. Some msg-id's don't provide a target-user-id.
         /// </summary>
         public long TargetUserID { get; } = -1;
-        public string Channel { get; }
+        public string ChannelName { get; }
         /// <summary>
         /// Additional information in different formats. You can look up the specifics here: https://dev.twitch.tv/docs/irc/msg-id
         /// </summary>
@@ -46,7 +46,7 @@ namespace P90Ez.Twitch.IRC
                             break;
                     }
             }
-            Channel = splitdata[3].Remove(0,1);
+            ChannelName = splitdata[3].Remove(0,1);
             for(int i = 4; i<splitdata.Length; i++)
             {
                 if (i == 4)

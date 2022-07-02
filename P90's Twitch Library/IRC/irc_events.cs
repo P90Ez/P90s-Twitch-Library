@@ -47,6 +47,18 @@ namespace P90Ez.Twitch.IRC
         /// Will be triggered whenever a CLEARCHAT is sent via IRC. Clearchat will give you information about deleted messages (not all - use also CLEARMSG) and banned/timeouted users.
         /// </summary>
         public EventHandler<irc_clearchat> OnCLEARCHAT;
+        /// <summary>
+        /// Will be triggered when a user was banned from a chat.
+        /// </summary>
+        public EventHandler<irc_clearchat> UserBanned;
+        /// <summary>
+        /// Will be triggered when a user was timeouted from a chat.
+        /// </summary>
+        public EventHandler<irc_clearchat> UserTimeOut;
+        /// <summary>
+        /// Will be triggered when the whole chat was cleared.
+        /// </summary>
+        public EventHandler<irc_clearchat> ChatCleared;
         #endregion
         #region CLEARMSG Events
         /// <summary>
