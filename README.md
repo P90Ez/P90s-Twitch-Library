@@ -7,10 +7,11 @@ A C# library with the goal to enable easy access to the Twitch services. Scalabi
 ## Authors
 
 - [@P90Ez](https://github.com/P90Ez)
-        [![P90Ez | Twitch](https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/twitch.svg")](https://twitch.com/p90ez)
-        [![P90Ez | Twitter](https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/twitter.svg")](https://twitter.com/P90Eazy)
-        [![P90Ez | YouTube](https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/youtube.svg")](https://p90ez.com/abop90code)
-        [![P90Ez | PayPal](https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/paypal.svg")](https://paypal.me/p90ez)
+[<img align="right" alt="P90Ez | Twitch" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/twitch.svg" />](https://twitch.tv/p90ez.com)
+[<img align="right" alt="P90Ez | Twitter" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/twitter.svg" />](https://twitter.com/P90Eazy)
+[<img align="right" alt="P90Ez | YouTube" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/youtube.svg" />](https://p90ez.com/abop90code)
+[<img align="right" alt="P90Ez | PayPal" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/paypal.svg" />](https://paypal.me/p90ez)
+
 ## Features
 
 - Easy to use (Auth) **Token Generator**. (see *[Login](https://github.com/P90Ez/P90s-Twitch-Library/blob/master/P90's%20Twitch%20Library/Login/Login.cs)*)
@@ -63,6 +64,9 @@ var credentials = Login.ClientCredentialsGrantFlow("YOUR APP's CLIENT ID", "YOUR
 //here is an example:
 var credentials = Login.ClientCredentialsGrantFlow("123456789abcdefgh", "hgfedcba987654321");
 ```
+
+---
+
 - **How to use an API endpoint?**
 ```c#
 using P90Ez.Twitch.API.Endpoints;
@@ -79,6 +83,9 @@ GetChannelInformation channelInfo = GetChannelInformation.Go(credentials, "USER 
 GetChannelInformation channelInfo = GetChannelInformation.Go(credentials, "USER ID", out isSuccess, out httpStatuscode, true);
 //This works with every endpoint which uses cache.
 ```
+
+---
+
 - **How to access Twitch's chat?**
 
 **Note**: The credentials must be an User Access Token and contain following scopes: *chat:read, chat:edit* (extra scope to use moderation tools: *channel:moderate* - extra scopes to recieve and send whispers: *whispers:read, whispers:edit*)
