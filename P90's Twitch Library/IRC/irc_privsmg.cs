@@ -331,7 +331,7 @@ namespace P90Ez.Twitch.IRC
                 parentController.BanUser(Username, ChannelName, reason);
         }
         /// <summary>
-        /// Replys to this message.
+        /// Replys directly to this message.
         /// </summary>
         /// <param name="message"></param>
         public void Reply(string message)
@@ -340,6 +340,14 @@ namespace P90Ez.Twitch.IRC
                 parentController.ReplyChatWriter(message, MessageID, ChannelName);
             else
                 parentController.ReplyChatWriter(message, ParentMessageID, ChannelName);
+        }
+        /// <summary>
+        /// Send a message to the chat without replying directly to the original message.
+        /// </summary>
+        /// <param name="message"></param>
+        public void SendMessage(string message)
+        {
+            parentController.ChatWriter(message, ChannelName);
         }
         private void UpdatePermissionlevel(Permissionlevels level)
         {
