@@ -9,9 +9,32 @@ using static P90Ez.Twitch.IRC.irc_usernotice;
 
 namespace P90Ez.Twitch.IRC
 {
+    /// <summary>
+    /// <strong>The IRC-Brain.
+    /// <para>Usage:</para></strong>
+    /// <list type="number">
+    /// <item>Create a new instance</item>
+    /// <item>Use Start()-function to start communication with Twitch irc-servers</item>
+    /// </list>
+    /// <para>Requiered Scopes: <em>chat:read, chat:edit (channel:moderate, whispers:read, whispers:edit)</em> - <seealso href="https://dev.twitch.tv/docs/authentication/scopes#chat-and-pubsub-scopes">A list of scopes for IRC</seealso></para>
+    /// <para>Requiered TokenType: <em>User Access Token</em></para>
+    /// </summary>
     public class Controller
     {
         #region Basic vars
+
+        /// <summary>
+        /// Requiered Scopes to use this endpoint.
+        /// </summary>
+        public static string RequieredScopes { get; } = "chat:read,chat:edit";
+        /// <summary>
+        /// Requiered Scopes to use chat moderation tools. <em>(Note: most of them won't work after february 2023 - use API Endpoints instead)</em>
+        /// </summary>
+        public static string ModerationScopes { get; } = "channel:moderate";
+        /// <summary>
+        /// Requiered Scopes to use to read &amp; send whispers. <em>(Note: depricated - use API Endpoints instead)</em>
+        /// </summary>
+        public static string WhisperScopes { get; } = "whispers:read,whispers:edit";
         /// <summary>
         /// Bot's username.
         /// </summary>
@@ -48,14 +71,19 @@ namespace P90Ez.Twitch.IRC
         /// <summary>
         /// Creates a new instance.
         /// </summary>
-        /// <param name="nick">Bot Username</param>
-        /// <param name="oath">Bot OAuth Token (important: starting with "OAUTH:...")</param>
-        /// <param name="channel">Twitch Channelname</param>
-        public Controller(string nick, string oath, string channel)
+        /// <param name="credentials"></param>
+        /// <param name="channel"></param>
+        public Controller(Login.Credentials credentials, string channel)
         {
-            Nick = nick.ToLower();
-            OAuth = oath;
+            if (credentials == null) throw new Exception("Credentials error.");
+            if (!credentials.isSuccess) throw new Exception("Credentials error.");
+            if (credentials.tokenType != Login.TokenType.UserAccessToken) throw new Exception("Provided token MUST be a User Acces Token!");
+            Nick = credentials.login.ToLower();
             Channel = channel.ToLower();
+            if(!credentials.AuthToken.ToLower().Contains("oauth:"))
+                OAuth = "oauth:" + credentials.AuthToken;
+            else
+                OAuth = credentials.AuthToken;
         }
         /// <summary>
         /// Starts the IRC session.
@@ -367,49 +395,49 @@ namespace P90Ez.Twitch.IRC
         }
         #region CHATCOMMANDS
         /// <summary>
-        /// Deletes this message from chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Deletes this message from chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void DeleteMessageFromChat(string ChannelName, string MessageID)
         {
                 IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/delete {MessageID}");
         }
         /// <summary>
-        /// Timeouts a user from this chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Timeouts a user from this chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void TimeOutUser(string Username, string ChannelName, int seconds)
         {
                 IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/timeout {Username} {seconds}");
         }
         /// <summary>
-        /// Removes a timeout from a user in this chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Removes a timeout from a user in this chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void UnTimeOutUser(string Username, string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/untimeout {Username}");
         }
         /// <summary>
-        /// Bans a user from this chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Bans a user from this chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void BanUser(string Username, string ChannelName, string reason = "Automod")
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/ban {Username} {reason}");
         }
         /// <summary>
-        /// Unbans a user from this chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Unbans a user from this chat. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void UnbanUser(string Username, string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/unban {Username}");
         }
         /// <summary>
-        /// Clears all messages from the chat room. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Clears all messages from the chat room. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void ClearChat(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/clear");
         }
         /// <summary>
-        /// Changes the color used for the bot’s username. The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Changes the color used for the bot’s username. The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="Color">A color string like 'red' or a hex color code like '#0D4200'</param>
@@ -418,7 +446,7 @@ namespace P90Ez.Twitch.IRC
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/color {Color}");
         }
         /// <summary>
-        /// Runs a commercial. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Runs a commercial. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="length">Supported lengts are: 30, 60, 90, 120, 150, 180 seconds.</param>
@@ -427,21 +455,21 @@ namespace P90Ez.Twitch.IRC
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/commercial {length}");
         }
         /// <summary>
-        /// Restricts users to posting chat messages that contain only emoticons. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Restricts users to posting chat messages that contain only emoticons. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void EmoteOnly(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/emoteonly");
         }
         /// <summary>
-        /// Removes EmoteOnly restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Removes EmoteOnly restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void EmoteOnlyOff(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/emoteonlyoff");
         }
         /// <summary>
-        /// Restricts who can post chat messages to followers only. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Restricts who can post chat messages to followers only. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="FollowTime">minimum length of time following channel in minutes</param>
@@ -450,14 +478,14 @@ namespace P90Ez.Twitch.IRC
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/followers {FollowTime}");
         }
         /// <summary>
-        /// Removes FollowersOnly restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Removes FollowersOnly restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void FollowersOnlyOff(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/followersoff");
         }
         /// <summary>
-        /// Hosts another channel in this channel. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Hosts another channel in this channel. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="TargetChannelName"></param>
@@ -466,63 +494,63 @@ namespace P90Ez.Twitch.IRC
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/host {TargetChannelName}");
         }
         /// <summary>
-        /// Stops hosting the other channel. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Stops hosting the other channel. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void UnHost(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/unhost");
         }
         /// <summary>
-        /// Marks a section of the broadcast to highlight later. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Marks a section of the broadcast to highlight later. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void SetMarker(string ChannelName, string description = "")
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/marker {description}");
         }
         /// <summary>
-        /// Removes the colon that typically appears after your chat name and italicizes the chat message’s text. The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Removes the colon that typically appears after your chat name and italicizes the chat message’s text. The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void MeMessage(string ChannelName, string message)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/me {message}");
         }
         /// <summary>
-        /// Gives a user moderator privileges. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Gives a user moderator privileges. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void Mod(string ChannelName, string Username)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/mod {Username}");
         }
         /// <summary>
-        /// Revokes a users moderator privileges. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Revokes a users moderator privileges. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void UnMod(string ChannelName, string Username)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/unmod {Username}");
         }
         /// <summary>
-        /// Lists the users that are moderators on the channel. The Twitch IRC server replies with a NOTICE message containing the list of moderator on this channel.
+        /// [DEPRICATED] Lists the users that are moderators on the channel. The Twitch IRC server replies with a NOTICE message containing the list of moderator on this channel.
         /// </summary>
         public void Mods(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/mods");
         }
         /// <summary>
-        /// Starts a raid. A raid sends your viewers to the specified channel. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Starts a raid. A raid sends your viewers to the specified channel. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void Raid(string ChannelName, string TargetChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/raid {TargetChannelName}");
         }
         /// <summary>
-        /// Cancels a raid. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Cancels a raid. The bot needs permission to perform this action (channel_editor)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void UnRaid(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/unraid");
         }
         /// <summary>
-        /// Restricts how often users can post messages. This sets the minimum time, in seconds, that a user must wait before being allowed to post another message. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Restricts how often users can post messages. This sets the minimum time, in seconds, that a user must wait before being allowed to post another message. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="waittime">minimum wait time in seconds</param>
@@ -531,63 +559,63 @@ namespace P90Ez.Twitch.IRC
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/slow {waittime}");
         }
         /// <summary>
-        /// Removes SlowMode restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Removes SlowMode restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void SlowModeOff(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/slowoff");
         }
         /// <summary>
-        /// Restricts who can post chat messages to subscribers only. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Restricts who can post chat messages to subscribers only. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void SubOnlyMode(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/subscribers");
         }
         /// <summary>
-        /// Removes SubOnlyMode restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Removes SubOnlyMode restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void SubOnlyModeOff(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/subscribersoff");
         }
         /// <summary>
-        /// Restricts a user’s chat messages to unique messages only; a user cannot send duplicate chat messages. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Restricts a user’s chat messages to unique messages only; a user cannot send duplicate chat messages. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void UniqueChatMode(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/uniquechat");
         }
         /// <summary>
-        /// Removes UniqueChatMode restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Removes UniqueChatMode restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void UniqueChatModeOff(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/uniquechatoff");
         }
         /// <summary>
-        /// Grants VIP status to a user. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Grants VIP status to a user. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void VIP(string ChannelName, string Username)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/vip {Username}");
         }
         /// <summary>
-        /// Revokes VIP status to a user. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Revokes VIP status to a user. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         public void UnVIP(string ChannelName, string Username)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/unvip {Username}");
         }
         /// <summary>
-        /// Lists the users with VIP status in the channel. The Twitch IRC server replies with a NOTICE message containing the list of vips on this channel.
+        /// [DEPRICATED] Lists the users with VIP status in the channel. The Twitch IRC server replies with a NOTICE message containing the list of vips on this channel.
         /// </summary>
         public void VIPs(string ChannelName)
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/vips");
         }
         /// <summary>
-        /// Highlights a message with a color. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Highlights a message with a color. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="message"></param>
@@ -614,7 +642,7 @@ namespace P90Ez.Twitch.IRC
             }
         }
         /// <summary>
-        /// Vote in the active poll on the given channel. The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Vote in the active poll on the given channel. The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="index"></param>
@@ -623,7 +651,7 @@ namespace P90Ez.Twitch.IRC
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/vote {index}");
         }
         /// <summary>
-        /// Display profile information about a user on this channel. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message containing all information.
+        /// [DEPRICATED] Display profile information about a user on this channel. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message containing all information.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="Username"></param>
@@ -632,7 +660,7 @@ namespace P90Ez.Twitch.IRC
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/user {Username}");
         }
         /// <summary>
-        /// Start restricting a user's messages. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Start restricting a user's messages. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="Username"></param>
@@ -641,7 +669,7 @@ namespace P90Ez.Twitch.IRC
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/restrict {Username}");
         }
         /// <summary>
-        /// Revokes restrictions from RestrictUser. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// [DEPRICATED] Revokes restrictions from RestrictUser. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
         /// <param name="ChannelName"></param>
         /// <param name="Username"></param>
@@ -649,7 +677,7 @@ namespace P90Ez.Twitch.IRC
         {
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/unrestrict {Username}");
         }
-        //Polls, Predictions & Goals still missing (may be added in a future update)
+        //[DEPRICATED] Polls, Predictions & Goals still missing (may be added in a future update)
         #endregion
         #endregion
         #region Users in Chat (+ Part, Join, 353, 366)
