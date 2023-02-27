@@ -78,6 +78,22 @@ namespace P90Ez.Twitch.API
                     objectstring = null;
                 return ToString();
             }
+            private string dataobjectstring = null;
+            /// <summary>
+            /// Converts this application to a Json String containing the data in a separate object called data. Pass true to force rebuild the Json String.
+            /// <para/>Looks like this: {"data": {...}}
+            /// </summary>
+            /// <param name="forcerebuild"></param>
+            /// <returns></returns>
+            public string ToDataObjectString(bool forcerebuild = false)
+            {
+                if (dataobjectstring == null || forcerebuild)
+                {
+                    var tmp = new { data = this };
+                    dataobjectstring = JsonConvert.SerializeObject(tmp, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
+                }
+                return dataobjectstring;
+            }
             /// <summary>
             /// Converts this application to query parameters. (format: '?key1=value1&amp;key2=value2&amp;...)
             /// </summary>

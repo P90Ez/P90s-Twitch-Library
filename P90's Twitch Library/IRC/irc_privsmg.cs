@@ -312,23 +312,23 @@ namespace P90Ez.Twitch.IRC
         public void DeleteMessageFromChat()
         {
             if (Permissionlevel < Permissionlevels.Mod)
-                parentController.DeleteMessageFromChat(ChannelName, MessageID);
+                parentController.DeleteMessageFromChat(MessageID); //dev note: replaced deprecated functions with new (API endpoint) functions - no channelname required -> might be a problem in the future (multiple chats with 1 controller)
         }
         /// <summary>
         /// Timeouts a user from this chat. The bot needs permission to perform this action! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
-        public void TimeOutMessageSender(int seconds)
+        public void TimeOutMessageSender(int seconds, string reason = "")
         {
             if (Permissionlevel < Permissionlevels.Mod && UserType == UserTypes.NormalUser)
-                parentController.TimeOutUser(Username,ChannelName,seconds);
+                parentController.TimeoutUser(UserID, seconds, reason);
         }
         /// <summary>
         /// Bans a user from this chat. The bot needs permission to perform this action! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
-        public void BanMessageSender(string reason = "Automod")
+        public void BanMessageSender(string reason = "")
         {
             if (Permissionlevel < Permissionlevels.Mod && UserType == UserTypes.NormalUser)
-                parentController.BanUser(Username, ChannelName, reason);
+                parentController.BanUser(UserID, reason);
         }
         /// <summary>
         /// Replys directly to this message.

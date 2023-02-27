@@ -96,76 +96,47 @@ namespace P90Ez.Twitch.IRC
         }
 
         /// <summary>
-        /// Restricts users to posting chat messages that contain only emoticons. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// Restricts users to posting chat messages that contain only emoticons. The bot needs permission to perform this action (channel:moderate/moderator:manage:chat_settings)!
         /// </summary>
-        public void SetEmoteOnly()
+        public bool SetEmoteOnly(bool Enabled)
         {
-            parentController.EmoteOnly(ChannelName);
+            return parentController.EmoteOnly(Enabled);
         }
         /// <summary>
-        /// Removes EmoteOnly restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// Restricts who can post chat messages to followers only (min follow time in minutes). The bot needs permission to perform this action (channel:moderate/moderator:manage:chat_settings)!
         /// </summary>
-        public void SetEmoteOnlyOff()
+        public bool SetFollowersOnly(bool Enabled, int FollowTime = -1)
         {
-            parentController.EmoteOnlyOff(ChannelName);
+            return parentController.FollowersOnly(Enabled, FollowTime);
         }
         /// <summary>
-        /// Restricts who can post chat messages to followers only. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// Restricts how often users can post messages. This sets the minimum time, in seconds, that a user must wait before being allowed to post another message. The bot needs permission to perform this action (channel:moderate/moderator:manage:chat_settings)!
         /// </summary>
-        /// <param name="FollowTime">minimum length of time following channel in minutes</param>
-        public void SetFollowersOnly(int FollowTime = 0)
+        public bool SetSlowMode(bool Enabled, int waittime = -1)
         {
-            parentController.FollowersOnly(ChannelName, FollowTime);
+            return parentController.SlowMode(Enabled, waittime);
         }
         /// <summary>
-        /// Removes FollowersOnly restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// Restricts who can post chat messages to subscribers only. The bot needs permission to perform this action (channel:moderate/moderator:manage:chat_settings)!
         /// </summary>
-        public void SetFollowersOnlyOff()
+        public bool SetSubOnlyMode(bool Enabled)
         {
-            parentController.FollowersOnlyOff(ChannelName);
+            return parentController.SubOnlyMode(Enabled);
         }
         /// <summary>
-        /// Restricts how often users can post messages. This sets the minimum time, in seconds, that a user must wait before being allowed to post another message. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// Restricts a user’s chat messages to unique messages only; a user cannot send duplicate chat messages. The bot needs permission to perform this action (channel:moderate/moderator:manage:chat_settings)!
         /// </summary>
-        /// <param name="waittime">minimum wait time in seconds</param>
-        public void SetSlowMode(int waittime)
+        public bool SetUniqueChatMode(bool Enabled)
         {
-            parentController.SlowMode(ChannelName, waittime);
+            return parentController.UniqueChatMode(Enabled);
         }
         /// <summary>
-        /// Removes SlowMode restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// Adds a short delay before chat messages appear in the chat room. This gives chat moderators and bots a chance to remove them before viewers can see the message. The bot needs permission to perform this action (moderator:manage:chat_settings)!
         /// </summary>
-        public void SetSlowModeOff()
+        /// <param name="delay">The amount of time, in seconds, that messages are delayed before appearing in chat. Possible values are: 2, 4, 6 (seconds)</param>
+        public bool SetModerationDelay(bool Enabled, int delay = -1)
         {
-            parentController.SlowModeOff(ChannelName);
-        }
-        /// <summary>
-        /// Restricts who can post chat messages to subscribers only. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
-        /// </summary>
-        public void SetSubOnlyMode()
-        {
-            parentController.SubOnlyMode(ChannelName);
-        }
-        /// <summary>
-        /// Removes SubOnlyMode restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
-        /// </summary>
-        public void SetSubOnlyModeOff()
-        {
-            parentController.SubOnlyModeOff(ChannelName);
-        }
-        /// <summary>
-        /// Restricts a user’s chat messages to unique messages only; a user cannot send duplicate chat messages. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
-        /// </summary>
-        public void SetUniqueChatMode()
-        {
-            parentController.UniqueChatMode(ChannelName);
-        }
-        /// <summary>
-        /// Removes UniqueChatMode restriction. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
-        /// </summary>
-        public void SetUniqueChatModeOff()
-        {
-            parentController.UniqueChatModeOff(ChannelName);
+            return parentController.ModerationChatDelay(Enabled, delay);
         }
     }
 }
