@@ -65,7 +65,7 @@ namespace P90Ez.Twitch.EventSub
             else
                 this.Logger = Logger;
 
-            if(credentials == null) throw new ArgumentNullException(nameof(credentials));
+            if(credentials == null) throw new Exceptions.ArgumentNullException(nameof(credentials), Logger);
             if (!credentials.IsSuccess) throw new IncorrectTokenException(Logger);
             if (!credentials.IsCorrectTokenType(RequieredTokenType)) throw new WrongTokenTypeException(RequieredTokenType, credentials.TokenType, "EventSub", Logger);
             _Creds = credentials;

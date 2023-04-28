@@ -18,7 +18,7 @@ A C# library with the goal to enable easy access to the Twitch services. Scalabi
 - Straightforward implementation of Twitch's **API Endpoints**. (see *[API](https://github.com/P90Ez/P90s-Twitch-Library/tree/master/P90's%20Twitch%20Library/API/Endpoints)*\*)
 - Complete **Chat** access with up-to-date moderation tools. (see *[IRC](https://github.com/P90Ez/P90s-Twitch-Library/blob/master/P90's%20Twitch%20Library/IRC/Controller.cs)*)
 - Convenient implementation of **Twitch PubSub** to monitor Channel Point redemtions, usage of bits and even channel subscriptions. (see *Pubsub*\*\*)
-- Simple usage of **EventSub** let's you monitor when a broadcaster goes online, new followers and subscriber and much more. (see *EventSub*\*\*)
+- Simple usage of **EventSub** let's you monitor when a broadcaster goes online, new followers and subscriber and much more. (see *[EventSub](https://github.com/P90Ez/P90s-Twitch-Library/tree/master/P90's%20Twitch%20Library/EventSub)*\*)
 - Uncomplicated use of **Extensions**. (see *Extensions*\*\*)
 
 
@@ -70,6 +70,14 @@ var credentials = Login.ClientCredentialsGrantFlow("123456789abcdefgh", "hgfedcb
 - **How to use an API endpoint?**
 ```c#
 using P90Ez.Twitch.API.Endpoints;
+
+//the super simple version: (SimplifiedRequests only contains hard to use and frequently used endpoints, like 'GetBroadcasterID' or moderation tools)
+
+SimplifiedRequests simpleRq = new SimplifiedRequests(credentials);
+long id = simpleRq.GetBroadcasterID("BROADCASTER NAME");
+
+
+//the still simple version:
 
 //the library comes with a lot of documentation. You should have an easy time using different endpoints.
 bool isSuccess;       //indicates if the request was successful - every endpoint outputs an isSuccess indication
@@ -131,6 +139,15 @@ static void onChatMessage(object source, irc_privsmg args)
 }
 ```
 
+- **How to use EventSub?**
+**NOTE**: The credentials must be an User Access Token and contain the scopes reqired by every event.
+```
+using P90Ez.Twitch.EventSub;
+
+EventSubInstance EventSub = new EventSubInstance(credentials); //creating a new instance (you can provide a logger, but you don't have to)
+EventSub.Add_Follows("BROADCASTER ID").Followed += OnFollow;   //Adding a event subscription and register the function 'OnFollow' to the EventHandler.
+//The function 'OnFollow' will be invoked whenever a user follows the specified channel.
+```
 
 ## Support / Bug Reports
 
