@@ -20,12 +20,16 @@ namespace P90Ez.Extensions
         /// <summary>
         /// Converts the body of the response to an object.
         /// </summary>
-        /// <param name="responseMessage"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
         public static object BodyToClassObject(this HttpResponseMessage responseMessage, Type type)
         {
             return JsonConvert.DeserializeObject(responseMessage.BodyToString(), type);
+        }
+        /// <summary>
+        /// Converts the body of the response to an object.
+        /// </summary>
+        public static T BodyToClassObject<T>(this HttpResponseMessage responseMessage)
+        {
+            return JsonConvert.DeserializeObject<T>(responseMessage.BodyToString());
         }
     }
     public static class StringExtensions
@@ -47,6 +51,70 @@ namespace P90Ez.Extensions
                 rtrn += parameterName + '=' + item;
             }
             return rtrn;
+        }
+
+        /// <summary>
+        /// Converts the first char of the input string to uppercase.
+        /// </summary>
+        public static string FirstCharToUpper(this string input) =>
+            input switch
+            {
+                null => throw new ArgumentNullException(nameof(input)),
+                "" => throw new ArgumentException($"{nameof(input)} cannot be empty", nameof(input)),
+                _ => string.Concat(input[0].ToString().ToUpper(), input.AsSpan(1))
+            };
+
+    }
+    public static class KeyValuePairExtensions
+    {
+        /// <summary>
+        /// Generates a Json string, using the keys as variable names.
+        /// </summary>
+        public static string ToJsonString(this List<KeyValuePair<string,string>> value)
+        {
+            string _out = "{";
+            foreach(var v in value)
+            {
+                if(_out != "{")
+                    _out += ",";
+                _out += $"\"{v.Key}\":\"{v.Value}\"";
+            }
+            _out += "}";
+            return _out;
+        }
+        /// <summary>
+        /// Generates a Json object, using the keys as variable names.
+        /// </summary>
+        public static object ToObject(this List<KeyValuePair<string, string>> value)
+        {
+            return JsonConvert.DeserializeObject(value.ToJsonString());
+        }
+        /// <summary>
+        /// Generates a Json string, using the key as variable name.
+        /// </summary>
+        public static string ToJsonString(this KeyValuePair<string, string> value)
+        {
+            return "{\"" + value.Key + ":\"" + value.Value + "\"}";
+        }
+    }
+    public static class ObjectExtensions
+    {
+        /// <summary>
+        /// Converts an object to an object of the right type, using JsonConvert.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static T ToObject<T>(this object obj)
+        {
+            return JsonConvert.DeserializeObject<T>(obj.ToJsonString());
+        }
+        /// <summary>
+        /// Converts this object to a Json string using JsonConvert.
+        /// </summary>
+        public static string ToJsonString(this object obj)
+        {
+            return JsonConvert.SerializeObject(obj);
         }
     }
 }

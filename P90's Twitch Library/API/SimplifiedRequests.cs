@@ -11,15 +11,21 @@ namespace P90Ez.Twitch.API
     /// </summary>
     public class SimplifiedRequests
     {
+        #region CTOR
         private protected Login.Credentials credentials;
+        private ILogger Logger { get; }
         /// <summary>
         /// Create on object of this class to get access to the simplified and comonly used request functions.
         /// </summary>
         /// <param name="credentials">Your generated login credentials</param>
-        public SimplifiedRequests(Login.Credentials credentials)
+        public SimplifiedRequests(Login.Credentials credentials, ILogger Logger = null)
         {
+            if (Logger == null) this.Logger = new Logger();
+            else this.Logger = Logger;
+
             this.credentials = credentials;
         }
+        #endregion
 
         #region Get User ID
         /// <summary>
@@ -74,6 +80,8 @@ namespace P90Ez.Twitch.API
                         return Convert.ToInt64(data.user_id); //return id when exact match was found
                 }
             }
+            if (httpStatuscode != 200)
+                Logger.Log($"GetStreams returned code {httpStatuscode}", ILogger.Severety.Message);
 
             isSuccessful = false; httpStatuscode = -1;
 
@@ -89,11 +97,14 @@ namespace P90Ez.Twitch.API
                         return Convert.ToInt64(data.id); //return id when exact match was found
                 }
             }
+            if (httpStatuscode != 200)
+                Logger.Log($"GetUsers returned code {httpStatuscode}", ILogger.Severety.Message);
 
             //return -1 when user could not be found.
             return -1;
         }
         #endregion
+
         #region Chat Moderation
         #region Delete Chat Message
         /// <summary>
@@ -104,9 +115,12 @@ namespace P90Ez.Twitch.API
         public bool DeleteChatMessage(long BroadcasterID, string MessageID)
         {
             Endpoints.DeleteChatMessage.DeleteMessage(credentials, MessageID, BroadcasterID.ToString(), out bool isSuccess, out int httpStatuscode);
+            if(httpStatuscode != 204)
+                Logger.Log($"DeleteChatMessage returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 204;
         }
         #endregion
+
         #region Timeout User
         /// <summary>
         /// Uses the BanUser endpoint to timeout a user.
@@ -116,6 +130,8 @@ namespace P90Ez.Twitch.API
         public bool TimeoutUser(long BroadcasterID, long UserID, int Duration, string reason = "")
         {
             Endpoints.BanUser.TimeOut(credentials, BroadcasterID.ToString(), UserID, Duration, reason, out bool isSuccess, out int httpStatuscode);
+            if (httpStatuscode != 200)
+                Logger.Log($"BanUser returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 200;
         }
         /// <summary>
@@ -128,6 +144,7 @@ namespace P90Ez.Twitch.API
             return UnbanUser(BroadcasterID, UserID);
         }
         #endregion
+
         #region Ban User
         /// <summary>
         /// Uses the BanUser endpoint to ban a user.
@@ -137,6 +154,8 @@ namespace P90Ez.Twitch.API
         public bool BanUser(long BroadcasterID, long UserID, string reason = "")
         {
             Endpoints.BanUser.Ban(credentials, BroadcasterID.ToString(), UserID, reason, out bool isSuccess, out int httpStatuscode);
+            if (httpStatuscode != 200)
+                Logger.Log($"BanUser returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 200;
         }
         /// <summary>
@@ -147,9 +166,12 @@ namespace P90Ez.Twitch.API
         public bool UnbanUser(long BroadcasterID, long UserID)
         {
             Endpoints.UnbanUser.Go(credentials, BroadcasterID.ToString(), UserID, out bool isSuccess, out int httpStatuscode);
+            if (httpStatuscode != 204)
+                Logger.Log($"UnbanUser returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 204;
         }
         #endregion
+
         #region Clear Chat
         /// <summary>
         /// Uses the DeleteChatMessage endpoint to clear the chat.
@@ -159,9 +181,12 @@ namespace P90Ez.Twitch.API
         public bool ClearChat(long BroadcasterID) 
         {
             Endpoints.DeleteChatMessage.ClearChat(credentials, BroadcasterID.ToString(), out bool isSuccess, out int httpStatuscode);
+            if (httpStatuscode != 204)
+                Logger.Log($"DeleteChatMessage returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 204;
         }
         #endregion
+
         #region Chat Settings
         /// <summary>
         /// Uses the UpdateChatSettings endpoint to enable/disable emote only chat mode.
@@ -171,6 +196,8 @@ namespace P90Ez.Twitch.API
         public bool EmoteChat(long BroadcasterID, bool Enabled)
         {
             UpdateChatSettings.EmoteChat(credentials, BroadcasterID.ToString(), Enabled, out bool isSuccess, out int httpStatuscode);
+            if (httpStatuscode != 200)
+                Logger.Log($"UpdateChatSettings returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 200;
         }
         /// <summary>
@@ -185,6 +212,8 @@ namespace P90Ez.Twitch.API
                 UpdateChatSettings.FollowerMode(credentials, BroadcasterID.ToString(), Enabled, out isSuccess, out httpStatuscode);
             else
                 UpdateChatSettings.FollowerMode(credentials, BroadcasterID.ToString(), Enabled, MinFollowTime, out isSuccess, out httpStatuscode);
+            if (httpStatuscode != 200)
+                Logger.Log($"UpdateChatSettings returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 200;
         }
         /// <summary>
@@ -195,6 +224,8 @@ namespace P90Ez.Twitch.API
         public bool SubscriberChat(long BroadcasterID, bool Enabled)
         {
             UpdateChatSettings.SubscriberMode(credentials, BroadcasterID.ToString(), Enabled, out bool isSuccess, out int httpStatuscode);
+            if (httpStatuscode != 200)
+                Logger.Log($"UpdateChatSettings returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 200;
         }
         /// <summary>
@@ -209,6 +240,8 @@ namespace P90Ez.Twitch.API
                 UpdateChatSettings.SlowMode(credentials, BroadcasterID.ToString(), Enabled, out isSuccess, out httpStatuscode);
             else
                 UpdateChatSettings.SlowMode(credentials, BroadcasterID.ToString(), Enabled, WaitTime, out isSuccess, out httpStatuscode);
+            if (httpStatuscode != 200)
+                Logger.Log($"UpdateChatSettings returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 200;
         }
         /// <summary>
@@ -219,6 +252,8 @@ namespace P90Ez.Twitch.API
         public bool UniqueMode(long BroadcasterID, bool Enabled)
         {
             UpdateChatSettings.UniqueMode(credentials, BroadcasterID.ToString(), Enabled, out bool isSuccess, out int httpStatuscode);
+            if (httpStatuscode != 200)
+                Logger.Log($"UpdateChatSettings returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 200;
         }
         /// <summary>
@@ -234,6 +269,8 @@ namespace P90Ez.Twitch.API
                 UpdateChatSettings.ModerationChatDelay(credentials, BroadcasterID.ToString(), Enabled, out isSuccess, out httpStatuscode);
             else
                 UpdateChatSettings.ModerationChatDelay(credentials, BroadcasterID.ToString(), Enabled, delay, out isSuccess, out httpStatuscode);
+            if (httpStatuscode != 200)
+                Logger.Log($"UpdateChatSettings returned code {httpStatuscode}", ILogger.Severety.Message);
             return isSuccess && httpStatuscode == 200;
         }
         #endregion

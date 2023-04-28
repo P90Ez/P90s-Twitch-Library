@@ -1,4 +1,5 @@
 ﻿using P90Ez.Twitch.API;
+using P90Ez.Twitch.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -37,6 +38,10 @@ namespace P90Ez.Twitch.IRC
         /// Requiered Scopes to use to read &amp; send whispers. <em>(Note: DEPRECATED - use API Endpoints instead)</em>
         /// </summary>
         public static string WhisperScopes { get; } = "whispers:read whispers:edit";
+        /// <summary>                                    
+        /// Requiered Tokentype to use this module.                                
+        /// </summary>
+        public static TokenType RequieredTokenType { get; } = TokenType.UserAccessToken;
         /// <summary>
         /// Bot's username.
         /// </summary>
@@ -64,9 +69,10 @@ namespace P90Ez.Twitch.IRC
         private StreamWriter _writer;
         private CancellationTokenSource _cancelToken;
         /// <summary>
-        /// Set to True to Display IRC Message in the Console
+        /// Set to True to Display IRC Message in the Console [Deprecated - will be removed in the future - please use the Logger!]
         /// </summary>
         public bool Debug = false;
+        internal ILogger Logger { get; }
         /// <summary>
         /// Let's the bot ignore it's own messages. (only applies to following events: OnPRIVMSG, OnChatMessage, OnChatMessageReply, OnBitMessage)
         /// </summary>
@@ -82,13 +88,16 @@ namespace P90Ez.Twitch.IRC
         /// </summary>
         /// <param name="credentials"></param>
         /// <param name="channel"></param>
-        public Controller(Login.Credentials credentials, string channel)
+        public Controller(Login.Credentials credentials, string channel, ILogger Logger = null)
         {
-            if (credentials == null) throw new Exception("Credentials error.");
-            if (!credentials.isSuccess) throw new Exception("Credentials error.");
-            if (credentials.tokenType != Login.TokenType.UserAccessToken) throw new Exception("Provided token MUST be a User Acces Token!");
+            if (Logger == null) this.Logger = new Logger();
+            else this.Logger = Logger;
 
-            Nick = credentials.login.ToLower();
+            if (credentials == null) throw new Exceptions.ArgumentNullException(nameof(credentials), Logger);
+            if (!credentials.IsSuccess) throw new IncorrectTokenException(Logger);
+            if (credentials.IsCorrectTokenType(RequieredTokenType)) throw new WrongTokenTypeException(RequieredTokenType, credentials.TokenType, "IRC controller", Logger);
+
+            Nick = credentials.UserLogin.ToLower();
             Channel = channel.ToLower();
             if(!credentials.AuthToken.ToLower().Contains("oauth:"))
                 OAuth = "oauth:" + credentials.AuthToken;
@@ -96,7 +105,7 @@ namespace P90Ez.Twitch.IRC
                 OAuth = credentials.AuthToken;
 
             this.credentials = credentials;
-            SimplifiedRequests = new API.SimplifiedRequests(credentials);
+            SimplifiedRequests = new API.SimplifiedRequests(credentials, Logger);
 
             Channel_ID = SimplifiedRequests.GetBroadcasterID(channel);
         }
@@ -196,6 +205,9 @@ namespace P90Ez.Twitch.IRC
                 }
                 catch (Exception ex)
                 {
+                    if (ex != null && ex.Message != null)
+                        Logger.Log(ex.Message, ILogger.Severety.Critical);
+
                     if (Debug && ex?.Message != null)
                         Console.WriteLine(ex.Message);
                     Thread.Sleep(5000); //When an error has occurred, wait 5 seconds and try again

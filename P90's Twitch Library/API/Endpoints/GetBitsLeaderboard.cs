@@ -55,7 +55,7 @@ namespace P90Ez.Twitch.API.Endpoints
             if (!isSuccess) //return if credential ceck failed
                 return null;
 
-            string cacheInputParas = IStandardEndpoint.InputParasBuilder(credentials.user_id, requestQueryParameter); //builds the cache input parameter
+            string cacheInputParas = IStandardEndpoint.InputParasBuilder(credentials.UserId, requestQueryParameter); //builds the cache input parameter
             if (!skipCache) //should cache be skipped?
             {               //no? -> Read Cache!
                 bool isCachedObjValid = false;

@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using P90Ez.Extensions;
 
 namespace P90Ez.Twitch
 {
@@ -21,7 +22,11 @@ namespace P90Ez.Twitch
         private static string stateGenerator()
         {
             Random rnd = new Random();
-            return rnd.Next(4096, int.MaxValue).ToString("x"); 
+            string s = "";
+            for (int i = 0; i < 4; i++) {
+                s += rnd.Next(4096, int.MaxValue).ToString("x");
+            }
+            return s;
         }
         /// <summary>
         /// Creates a HttpListener and returns the redirected url
@@ -184,16 +189,5 @@ namespace P90Ez.Twitch
             public string message { get; set; }
         }
 
-    }
-
-    public static class StringExtensions
-    {
-        public static string FirstCharToUpper(this string input) =>
-            input switch
-            {
-                null => throw new ArgumentNullException(nameof(input)),
-                "" => throw new ArgumentException($"{nameof(input)} cannot be empty", nameof(input)),
-                _ => string.Concat(input[0].ToString().ToUpper(), input.AsSpan(1))
-            };
     }
 }

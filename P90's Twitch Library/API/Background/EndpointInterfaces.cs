@@ -122,7 +122,7 @@ namespace P90Ez.Twitch.API
             {
                 if (creds == null)
                     return false;
-                if (!creds.isSuccess)
+                if (!creds.IsSuccess)
                     return false;
                 return creds.ContainsScope(RequieredScopes) && creds.IsCorrectTokenType(RequieredTokenType);
             }

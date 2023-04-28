@@ -111,7 +111,7 @@ namespace P90Ez.Twitch.API.Endpoints
 
             var application = new Application() { duration= duration, user_id = UserID.ToString(), reason = reason };
 
-            var request = APICom.Request(out isSuccess, credentials, EndpointURL + $"?broadcaster_id={broadcaster_id}&moderator_id={credentials.user_id}", method, application.ToDataObjectString()); //make request
+            var request = APICom.Request(out isSuccess, credentials, EndpointURL + $"?broadcaster_id={broadcaster_id}&moderator_id={credentials.UserId}", method, application.ToDataObjectString()); //make request
 
             if (request != null) //if request is not null, get status code (for later debugging)
                 httpStatuscode = (int)request.StatusCode;

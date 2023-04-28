@@ -29,7 +29,7 @@ namespace P90Ez.Twitch.API
         {
 
             [JsonProperty]
-            public JsonPaginationSub pagination;
+            internal JsonPaginationSub pagination { get; set; }
             /// <summary>
             /// 'after' parameter to get the next list of items
             /// </summary>
@@ -43,7 +43,7 @@ namespace P90Ez.Twitch.API
             /// <summary>
             /// IGNORE - Sub Class for Pagination Deserilization
             /// </summary>
-            public class JsonPaginationSub
+            internal class JsonPaginationSub
             {
                 [JsonProperty]
                 public string cursor { get; internal set; }

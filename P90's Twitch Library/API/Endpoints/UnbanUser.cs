@@ -49,7 +49,7 @@ namespace P90Ez.Twitch.API.Endpoints
             if (!isSuccess) //return if credential ceck failed
                 return;
 
-            var request = APICom.Request(out isSuccess, credentials, EndpointURL + $"?broadcaster_id={broadcaster_id}&moderator_id={credentials.user_id}&user_id={UserID}", method); //make request
+            var request = APICom.Request(out isSuccess, credentials, EndpointURL + $"?broadcaster_id={broadcaster_id}&moderator_id={credentials.UserId}&user_id={UserID}", method); //make request
 
             if (request != null) //if request is not null, get status code (for later debugging)
                 httpStatuscode = (int)request.StatusCode;

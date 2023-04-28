@@ -23,7 +23,7 @@ namespace P90Ez.Twitch.API
             /// <exception cref="Exception"></exception>
             public static HttpResponseMessage Request(out bool isSuccessful, Credentials creds, string url, HttpMethod method, string application = "")
             {
-                if (creds == null || !creds.isSuccess) throw new Exception("Credentials error.");
+                if (creds == null || !creds.IsSuccess) throw new Exception("Credentials error.");
                 if (url == null|| url == "") throw new Exception("URL is empty");
                 if (method == null) throw new Exception("No HTTP Method defined");
                 try
@@ -31,7 +31,7 @@ namespace P90Ez.Twitch.API
                     using (HttpClient client = new HttpClient())
                     {
                         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {creds.AuthToken}"); //Autorisierung
-                        client.DefaultRequestHeaders.Add("Client-Id", creds.client_id); //Autorisierung
+                        client.DefaultRequestHeaders.Add("Client-Id", creds.ClientId); //Autorisierung
                         var request = new HttpRequestMessage
                         {
                             Method = method, //Art der Anfrage festlegen

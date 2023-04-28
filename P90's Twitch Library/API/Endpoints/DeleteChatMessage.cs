@@ -42,7 +42,7 @@ namespace P90Ez.Twitch.API.Endpoints
         /// <param name="httpStatuscode">Contains a status code for error handling (-> 0 if no data was recieved from the server)</param>
         public static void ClearChat(Login.Credentials credentials, string Broadcaster_ID, out bool isSuccess, out int httpStatuscode)
         {
-            Go(credentials, Broadcaster_ID, new QueryParams() { broadcaster_id = Broadcaster_ID, moderator_id = credentials.user_id }, out isSuccess, out httpStatuscode);
+            Go(credentials, Broadcaster_ID, new QueryParams() { broadcaster_id = Broadcaster_ID, moderator_id = credentials.UserId }, out isSuccess, out httpStatuscode);
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace P90Ez.Twitch.API.Endpoints
         /// <param name="httpStatuscode">Contains a status code for error handling (-> 0 if no data was recieved from the server)</param>
         public static void DeleteMessage(Login.Credentials credentials, string Message_ID, string Broadcaster_ID, out bool isSuccess, out int httpStatuscode)
         {
-            Go(credentials, Broadcaster_ID, new QueryParams() { broadcaster_id = Broadcaster_ID, moderator_id = credentials.user_id, message_id = Message_ID }, out isSuccess, out httpStatuscode);
+            Go(credentials, Broadcaster_ID, new QueryParams() { broadcaster_id = Broadcaster_ID, moderator_id = credentials.UserId, message_id = Message_ID }, out isSuccess, out httpStatuscode);
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace P90Ez.Twitch.API.Endpoints
         {
             if (privmsg.Permissionlevel < irc_Enums.Permissionlevels.Mod && DateTime.Now.Subtract(privmsg.MessageSentTimeStamp).TotalHours < 6.0)
             {
-                Go(credentials, Broadcaster_ID, new QueryParams() { broadcaster_id = Broadcaster_ID, moderator_id = credentials.user_id, message_id = privmsg.MessageID }, out isSuccess, out httpStatuscode);
+                Go(credentials, Broadcaster_ID, new QueryParams() { broadcaster_id = Broadcaster_ID, moderator_id = credentials.UserId, message_id = privmsg.MessageID }, out isSuccess, out httpStatuscode);
             }
             else
             {

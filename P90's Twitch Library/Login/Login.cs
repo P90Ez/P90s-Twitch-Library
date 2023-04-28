@@ -21,8 +21,11 @@ namespace P90Ez.Twitch
         /// <strong>This flow is meant for apps that don’t use a server, such as client-side apps or mobile apps.</strong>
         /// <para>Generated Token Type: <em>User Access Token</em></para>
         /// </summary>
-        public static Credentials ImplicitGrantFlow(string ClientId, List<string> Scopes)
+        public static Credentials ImplicitGrantFlow(string ClientId, List<string> Scopes, ILogger Logger = null)
         {
+            if (Logger == null) Logger = new Logger();
+            if (ClientId == null || ClientId == "") throw new Exceptions.ArgumentNullException(nameof(ClientId), Logger);
+    
             string state = stateGenerator();                                //generate a validation string to prevent CSRF attacks
             string url = "https://id.twitch.tv/oauth2/authorize" +          //generate URL with parameters - these parameters can be found in the documentation
                 "?response_type=token" +
@@ -32,13 +35,13 @@ namespace P90Ez.Twitch
                 $"&state={state}";
             OpenBrowser(url);                                               //Open URL in browser
             var paras = GetUrlParams(Listener(redirecturl));                //gets & parses url parameters after user authorization
-            if (!ImplicitGrantFlow_CheckParas(paras, state)) return new Credentials("Para Check failed");       //check parameters
-            var creds = ValidateToken(paras["access_token"], "Bearer");                                         //Checks if generated token is valid
-            if (creds.isSuccess)
+            if (!ImplicitGrantFlow_CheckParas(paras, state)) return new Credentials("Para Check failed", Logger);   //check parameters
+            var creds = ValidateToken(paras["access_token"], "Bearer", Logger);                                     //Checks if generated token is valid
+            if (creds.IsSuccess)
             {                          
-                creds.isSuccess = true;
+                creds.IsSuccess = true;
                 creds.AuthToken = paras["access_token"];
-                creds.tokenType = TokenType.UserAccessToken;
+                creds.TokenType = TokenType.UserAccessToken;
             }
             return creds;
         }
@@ -64,8 +67,11 @@ namespace P90Ez.Twitch
         /// <param name="ClientId"></param>
         /// <param name="Scopes"></param>
         /// <returns></returns>
-        public static string AuthorizationCodeFlow_FrontEnd(string ClientId, List<string> Scopes)
+        public static string AuthorizationCodeFlow_FrontEnd(string ClientId, List<string> Scopes, ILogger Logger = null)
         {
+            if (Logger == null) Logger = new Logger();
+            if (ClientId == null || ClientId == "") throw new Exceptions.ArgumentNullException(nameof(ClientId), Logger);
+
             string state = stateGenerator();                                //generate a validation string to prevent CSRF attacks
             string url = "https://id.twitch.tv/oauth2/authorize" +          //generate URL with parameters - these parameters can be found in the documentation
                 "?response_type=code" +
@@ -75,28 +81,37 @@ namespace P90Ez.Twitch
                 $"&state={state}";
             OpenBrowser(url);                                                       //Open URL in browser
             var paras = GetUrlParams(Listener(redirecturl));                        //gets & parses url parameters after user authorization
-            if (!AuthorizationCodeFlow_CheckParas(paras, state)) return null;       //check parameters - These parameters only contain a code. This code has to be used in the next step to get an acces token.
+            if (!AuthorizationCodeFlow_CheckParas(paras, state))                    //check parameters - These parameters only contain a code. This code has to be used in the next step to get an acces token.
+            {
+                Logger.Log("Parameter check failed!", ILogger.Severety.Critical);
+                return null;
+            }
             return paras["code"];
         }
 
         /// <summary>
         /// (Back End Part) 
-        /// <strong><para>Uses the code (from the <seealso cref="AuthorizationCodeFlow_FrontEnd(string, List{string})">Front End Part</seealso>) to get the AuthToken - This flow is meant for apps that use a server, can securely store a client secret, and can make server-to-server requests to the Twitch API.</para></strong>
+        /// <strong><para>Uses the code (from the <seealso cref="AuthorizationCodeFlow_FrontEnd(string, List{string}, ILogger)">Front End Part</seealso>) to get the AuthToken - This flow is meant for apps that use a server, can securely store a client secret, and can make server-to-server requests to the Twitch API.</para></strong>
         /// <para>Generated Token Type: <em>User Access Token</em></para>
         /// </summary>
-        public static Credentials AuthorizationCodeFlow_BackEnd(string ClientId, string ClientSecret, string code)
+        public static Credentials AuthorizationCodeFlow_BackEnd(string ClientId, string ClientSecret, string code, ILogger Logger = null)
         {
+            if (Logger == null) Logger = new Logger();
+            if (ClientId == null || ClientId == "") throw new Exceptions.ArgumentNullException(nameof(ClientId), Logger);
+            if (ClientSecret == null || ClientSecret == "") throw new Exceptions.ArgumentNullException(nameof(ClientSecret), Logger);
+            if (code == null || code == "") throw new Exceptions.ArgumentNullException(nameof(code), Logger);
+
             //Create request body - parameters can be found in the documentation
             var application = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("client_id", ClientId), new KeyValuePair<string, string>("client_secret", ClientSecret), new KeyValuePair<string, string>("code", code), new KeyValuePair<string, string>("grant_type", "authorization_code"), new KeyValuePair<string, string>("redirect_uri", redirecturl) };
             var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", application, HttpMethod.Post);                     //Send request to optain the acces token
-            if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed");                                      //Check if request is succesful
+            if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed", Logger);                              //Check if request is succesful
             var tempcreds = JsonConvert.DeserializeObject<AuthorizationCodeGrantFlow_Creds>(tokenresponse.Content.ReadAsStringAsync().Result);      //Deserialize data
-            var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type);                                                                //Checks if generated token is valid
-            if (creds.isSuccess)
+            var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type, Logger);                                                        //Checks if generated token is valid
+            if (creds.IsSuccess)
             {
                 creds.AuthToken = tempcreds.access_token;
                 creds.RefreshToken = tempcreds.refresh_token;
-                creds.tokenType = TokenType.UserAccessToken;
+                creds.TokenType = TokenType.UserAccessToken;
             }
             return creds;
         }
@@ -129,18 +144,22 @@ namespace P90Ez.Twitch
         /// <strong>The client credentials grant flow is meant only for server-to-server API requests.</strong>
         /// <para>Generated Token Type: <em>App Access Token</em></para>
         /// </summary>
-        public static Credentials ClientCredentialsGrantFlow(string ClientId, string ClientSecret)
+        public static Credentials ClientCredentialsGrantFlow(string ClientId, string ClientSecret, ILogger Logger = null)
         {
+            if (Logger == null) Logger = new Logger();
+            if (ClientId == null || ClientId == "") throw new Exceptions.ArgumentNullException(nameof(ClientId), Logger);
+            if (ClientSecret == null || ClientSecret == "") throw new Exceptions.ArgumentNullException(nameof(ClientSecret), Logger);
+
             //Create request body - parameters can be found in the documentation
             var application = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("client_id", ClientId), new KeyValuePair<string, string>("client_secret", ClientSecret), new KeyValuePair<string, string>("grant_type", "client_credentials") };
             var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", application, HttpMethod.Post);                     //Send request
-            if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed");                                      //Check if request is succesful
+            if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed", Logger);                              //Check if request is succesful
             var tempcreds = JsonConvert.DeserializeObject<ClientCredentialsGrantFlow_Creds>(tokenresponse.Content.ReadAsStringAsync().Result);      //Deserialize data
-            var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type);                                                                //Checks if generated token is valid
-            if (creds.isSuccess)
+            var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type, Logger);                                                        //Checks if generated token is valid
+            if (creds.IsSuccess)
             {
                 creds.AuthToken = tempcreds.access_token;
-                creds.tokenType = TokenType.AppAccessToken;
+                creds.TokenType = TokenType.AppAccessToken;
             }
             return creds;
         }
@@ -166,17 +185,20 @@ namespace P90Ez.Twitch
         /// <param name="token"></param>
         /// <param name="tokentype">Only 'Bearer' and 'OAuth' are valid!</param>
         /// <returns></returns>
-        public static Credentials ValidateToken(string token, string tokentype)
+        public static Credentials ValidateToken(string token, string tokentype, ILogger Logger = null)
         {
-            var valiresponse = ValidateTokenRequest(tokentype, token);                                          //Validate token using another request to twitch server
-            if (!CheckValidationRequest(valiresponse)) return new Credentials("Token Validation Failed");       //Check validation response
+            if (Logger == null) Logger = new Logger();
+            if (token == null || token == "") throw new Exceptions.ArgumentNullException(nameof(token), Logger);
+
+            var valiresponse = ValidateTokenRequest(tokentype, token);                                              //Validate token using another request to twitch server
+            if (!CheckValidationRequest(valiresponse)) return new Credentials("Token Validation Failed", Logger);   //Check validation response
             try
             {
                 var creds = JsonConvert.DeserializeObject<Credentials>(valiresponse.Content.ReadAsStringAsync().Result);
-                creds.isSuccess = true;
+                creds.IsSuccess = true;
                 return creds;
             }
-            catch { return new Credentials("Credential Deserialization Failed"); }
+            catch { return new Credentials("Credential Deserialization Failed", Logger); }
         }
         #endregion
         #region Refresh Token
@@ -186,18 +208,22 @@ namespace P90Ez.Twitch
         /// <param name="InCreds"></param>
         /// <param name="client_secret"></param>
         /// <returns></returns>
-        public static Credentials RefreshToken(Credentials InCreds, string client_secret)
+        public static Credentials RefreshToken(Credentials InCreds, string client_secret, ILogger Logger = null)
         {
-            if (InCreds.RefreshToken == null || InCreds.RefreshToken == "") return new Credentials("Refresh Token is null or empty");           //Check if Refresh Token is provided. Can only be obtained by using AuthorizationCodeFlow.
-            var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("grant_type", "refresh_token"), new KeyValuePair<string, string>("refresh_token", InCreds.RefreshToken), new KeyValuePair<string, string>("client_id", InCreds.client_id), new KeyValuePair<string, string>("client_secret", client_secret) }, HttpMethod.Post);
-            if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed");                                  //Check if request is succesful
+            if (Logger == null) Logger = new Logger();
+            if (InCreds == null) throw new Exceptions.ArgumentNullException(nameof(InCreds), Logger);
+            if (client_secret == null || client_secret == "") throw new Exceptions.ArgumentNullException(nameof(client_secret), Logger);
+
+            if (InCreds.RefreshToken == null || InCreds.RefreshToken == "") return new Credentials("Refresh Token is null or empty", Logger);   //Check if Refresh Token is provided. Can only be obtained by using AuthorizationCodeFlow.
+            var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("grant_type", "refresh_token"), new KeyValuePair<string, string>("refresh_token", InCreds.RefreshToken), new KeyValuePair<string, string>("client_id", InCreds.ClientId), new KeyValuePair<string, string>("client_secret", client_secret) }, HttpMethod.Post);
+            if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed", Logger);                          //Check if request is succesful
             var tempcreds = JsonConvert.DeserializeObject<AuthorizationCodeGrantFlow_Creds>(tokenresponse.Content.ReadAsStringAsync().Result);  //Deserialize data
-            var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type);                                                            //Checks if generated token is valid
-            if (creds.isSuccess)
+            var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type, Logger);                                                    //Checks if generated token is valid
+            if (creds.IsSuccess)
             {
                 creds.AuthToken = tempcreds.access_token;
                 creds.RefreshToken = tempcreds.refresh_token;
-                creds.tokenType = TokenType.UserAccessToken;
+                creds.TokenType = TokenType.UserAccessToken;
             }
             return creds;
         }
