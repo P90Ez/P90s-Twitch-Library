@@ -97,5 +97,44 @@ namespace P90Ez.Twitch.EventSub
             WS_Start();
             return tmp;
         }
+
+        /// <summary>
+        /// The stream.online subscription type sends a notification when the specified broadcaster starts a stream.
+        /// <para>Requiered scope: -</para>
+        /// </summary>
+        /// <param name="Broadcaster_ID">The broadcaster user ID you want to get stream online notifications for.</param>
+        /// <returns>An object of Stream_Online. Use this object to access the EventHandler.</returns>
+        public Stream_Online Add_Stream_Online(string Broadcaster_ID)
+        {
+            var tmp = new Stream_Online(this, Broadcaster_ID, Logger);
+            WS_Start();
+            return tmp;
+        }
+
+        /// <summary>
+        /// The stream.offline subscription type sends a notification when the specified broadcaster stops a stream.
+        /// <para>Requiered scope: -</para>
+        /// </summary>
+        /// <param name="Broadcaster_ID">The broadcaster user ID you want to get stream offline notifications for.</param>
+        /// <returns>An object of Stream_Offline. Use this object to access the EventHandler.</returns>
+        public Stream_Offline Add_Stream_Offline(string Broadcaster_ID)
+        {
+            var tmp = new Stream_Offline(this, Broadcaster_ID, Logger);
+            WS_Start();
+            return tmp;
+        }
+
+        /// <summary>
+        /// Contains all events regarding ChannelPoints to the specified broadcaster.
+        /// <para>Requiered scope: <em>channel:read:redemptions</em> or <em>channel:manage:redemptions</em></para>
+        /// </summary>
+        /// <param name="Broadcaster_ID">The broadcaster user ID for the channel you want to receive channel points events for.</param>
+        /// <returns>An object of ChannelPoints. Use this object to access the EventHandlers.</returns>
+        public ChannelPoints Add_ChannelPoints(string Broadcaster_ID)
+        {
+            var tmp = new ChannelPoints(this, Broadcaster_ID, Logger);
+            WS_Start();
+            return tmp;
+        }
     }
 }

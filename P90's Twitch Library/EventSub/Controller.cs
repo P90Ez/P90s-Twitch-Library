@@ -4,7 +4,6 @@ using P90Ez.Twitch.Exceptions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using System.Text;
 using System.Timers;
 using WebSocketSharp;
@@ -123,6 +122,10 @@ namespace P90Ez.Twitch.EventSub
             /// </summary>
             private bool IntentionalDisconnect = false;
             /// <summary>
+            /// Contains recieved message IDs for at least 10 minutes.
+            /// </summary>
+            private ExpirableList<string> RecievedMessageIDs { get; } = new ExpirableList<string>(30, new TimeSpan(0, 10, 0)); //checks every 30 seconds if items are expired (10 min until items expire)
+            /// <summary>
             /// The (provided) logger for this EventSub instance.
             /// </summary>
             private ILogger Logger { get { return Parent.Logger; } }
@@ -191,7 +194,12 @@ namespace P90Ez.Twitch.EventSub
             {
                 if (message == null || message.Metadata == null) return;
                 
-                switch(message.Metadata.Type)
+                if (DateTime.Now.Subtract(message.Metadata.TimeStamp).TotalMinutes >= 10) return; //prevent replay attacks - making sure the message isn't older than 10 minutes
+                
+                if (RecievedMessageIDs.Contains(message.Metadata.ID)) return; //prevent replay attacks - making sure the message wasn't already processed. (Twitch also sends messages multiple times occasionally)
+                RecievedMessageIDs.Add(message.Metadata.ID);
+
+                switch (message.Metadata.Type)
                 {
                     case "session_welcome": //subscribe to topics
                         if (message.Payload != null && message.Payload.Session != null)

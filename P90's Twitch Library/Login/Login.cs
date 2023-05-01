@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using P90Ez.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -42,6 +43,7 @@ namespace P90Ez.Twitch
                 creds.IsSuccess = true;
                 creds.AuthToken = paras["access_token"];
                 creds.TokenType = TokenType.UserAccessToken;
+                creds.TokenGenType = TokenGenType.ImplicitGrantFlow;
             }
             return creds;
         }
@@ -111,7 +113,9 @@ namespace P90Ez.Twitch
             {
                 creds.AuthToken = tempcreds.access_token;
                 creds.RefreshToken = tempcreds.refresh_token;
+                creds.ClientSecret = ClientSecret;
                 creds.TokenType = TokenType.UserAccessToken;
+                creds.TokenGenType = TokenGenType.AuthorizationCodeFlow;
             }
             return creds;
         }
@@ -160,6 +164,8 @@ namespace P90Ez.Twitch
             {
                 creds.AuthToken = tempcreds.access_token;
                 creds.TokenType = TokenType.AppAccessToken;
+                creds.TokenGenType = TokenGenType.ClientCredentialsGrantFlow;
+                creds.ClientSecret = ClientSecret;
             }
             return creds;
         }
@@ -174,7 +180,9 @@ namespace P90Ez.Twitch
         /// <summary>
         /// Checks if a token is still valid using a request to the Twitch server
         /// </summary>
-        public static bool IsTokenValid(string token, string tokentype)
+        /// <param name="token"></param>
+        /// <param name="tokentype">Only 'Bearer' and 'OAuth' are valid!</param>
+        public static bool IsTokenValid(string token, string tokentype = "Bearer")
         {
             var valiresponse = ValidateTokenRequest(tokentype, token); //Validate token using a request to twitch server
             return CheckValidationRequest(valiresponse); //Check validation response
@@ -185,7 +193,7 @@ namespace P90Ez.Twitch
         /// <param name="token"></param>
         /// <param name="tokentype">Only 'Bearer' and 'OAuth' are valid!</param>
         /// <returns></returns>
-        public static Credentials ValidateToken(string token, string tokentype, ILogger Logger = null)
+        private static Credentials ValidateToken(string token, string tokentype, ILogger Logger = null)
         {
             if (Logger == null) Logger = new Logger();
             if (token == null || token == "") throw new Exceptions.ArgumentNullException(nameof(token), Logger);
@@ -206,17 +214,19 @@ namespace P90Ez.Twitch
         /// Refreshes your acces token. Only works if AuthorizationCodeFlow was used to obtain your token.
         /// </summary>
         /// <param name="InCreds"></param>
-        /// <param name="client_secret"></param>
         /// <returns></returns>
-        public static Credentials RefreshToken(Credentials InCreds, string client_secret, ILogger Logger = null)
+        public static Credentials RefreshToken(Credentials InCreds, ILogger Logger = null)
         {
             if (Logger == null) Logger = new Logger();
             if (InCreds == null) throw new Exceptions.ArgumentNullException(nameof(InCreds), Logger);
-            if (client_secret == null || client_secret == "") throw new Exceptions.ArgumentNullException(nameof(client_secret), Logger);
 
             if (InCreds.RefreshToken == null || InCreds.RefreshToken == "") return new Credentials("Refresh Token is null or empty", Logger);   //Check if Refresh Token is provided. Can only be obtained by using AuthorizationCodeFlow.
-            var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("grant_type", "refresh_token"), new KeyValuePair<string, string>("refresh_token", InCreds.RefreshToken), new KeyValuePair<string, string>("client_id", InCreds.ClientId), new KeyValuePair<string, string>("client_secret", client_secret) }, HttpMethod.Post);
+            if (InCreds.ClientSecret == null || InCreds.ClientSecret == "") return new Credentials("Client Secret is null or empty", Logger);
+            if (InCreds.ClientId == null || InCreds.ClientId == "") return new Credentials("Client Id is null or empty", Logger);
+            
+            var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("grant_type", "refresh_token"), new KeyValuePair<string, string>("refresh_token", InCreds.RefreshToken), new KeyValuePair<string, string>("client_id", InCreds.ClientId), new KeyValuePair<string, string>("client_secret", InCreds.ClientSecret) }, HttpMethod.Post);
             if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed", Logger);                          //Check if request is succesful
+            
             var tempcreds = JsonConvert.DeserializeObject<AuthorizationCodeGrantFlow_Creds>(tokenresponse.Content.ReadAsStringAsync().Result);  //Deserialize data
             var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type, Logger);                                                    //Checks if generated token is valid
             if (creds.IsSuccess)
@@ -226,6 +236,75 @@ namespace P90Ez.Twitch
                 creds.TokenType = TokenType.UserAccessToken;
             }
             return creds;
+        }
+        #endregion
+        #region Load/Store
+        /// <summary>
+        /// Loads credentials from encrypted file, checks if token is still valid and refreshes it if necessary.
+        /// </summary>
+        /// <param name="Filename">Path to file where the credentials were stored.</param>
+        /// <param name="Key">The key used to encrypt the file.</param>
+        /// <param name="creds">Valid credentials or null if validation and refreshing failed.</param>
+        /// <returns>True if credentials are valid. Otherwise false.</returns>
+        public bool LoadFromFile(string Filename, string Key, out Credentials creds, ILogger Logger = null)
+        {
+            creds = null;
+            if(Filename == null || Filename == "") return false;
+            
+            if(Logger == null) Logger = new Logger();
+
+            string decryptedFile = Decrypt(Filename, Key, Logger); //Read and decrypt file.
+            if (decryptedFile == null || decryptedFile == "") return false; //Decryption failed.
+
+            try
+            {
+                creds = JsonConvert.DeserializeObject<Credentials>(decryptedFile);
+            } catch { return false; } //Deserialization or decryption failed.
+            if (creds == null) return false; //Deserialization or decryption failed.
+
+            if (!creds.IsSuccess) return false; //Token generation failed before saving.
+
+            if(creds.ExpirationDate.Subtract(DateTime.Now).TotalSeconds <= 0) //Token is expired
+            {
+                if (creds.ClientSecret != null || creds.ClientSecret != "")
+                {
+                    if (creds.TokenGenType == TokenGenType.ClientCredentialsGrantFlow && creds.RefreshToken != null && creds.RefreshToken != "")
+                    {
+                        creds = RefreshToken(creds, Logger);
+                    }
+                    else if (creds.TokenGenType == TokenGenType.AuthorizationCodeFlow)
+                    {
+                        creds = ClientCredentialsGrantFlow(creds.ClientId, creds.ClientSecret, Logger);
+                    }
+                    else
+                        return false; //Token is expired and cannot be refreshed.
+                }
+                else
+                    return false; //Token is expired and cannot be refreshed.
+            }
+            else //Token is not expired
+            {
+                if (!IsTokenValid(creds.AuthToken)) return false; //Token validation failed.
+            }
+
+            return true; //Token is valid.
+        }
+
+        /// <summary>
+        /// Stores encrypted credentials to a file.
+        /// </summary>
+        /// <param name="Filename">Path to store the file.</param>
+        /// <param name="Key">Key to encrypt the file with. Use this key to decrypt the file again.</param>
+        /// <param name="creds"></param>
+        public void StoreToFile(string Filename, string Key, Credentials creds, ILogger Logger = null)
+        {
+            if (Filename == null || Filename == "" || Key == null) return;
+
+            if(Logger == null) Logger = new Logger();
+
+            string data = creds.ToJsonString();
+
+            Encrypt(Filename, data, Key, Logger);
         }
         #endregion
     }

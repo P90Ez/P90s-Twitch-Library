@@ -72,18 +72,22 @@ namespace P90Ez.Twitch.IRC
             }
         }
         public string ColorCode { get; private set; }
-        private string[] _Command;
+        private string[] _CommandArray;
         /// <summary>
-        /// 'Command', split every ' ' (Space)
+        /// 'Command', (split every space symbol) - NOT in lowercase.
         /// </summary>
-        public string[] Command { get 
+        public string[] CommandArray { get 
             {
-                if(_Command != null)
-                    return _Command;
+                if(_CommandArray != null)
+                    return _CommandArray;
                 if (!Message.Contains(" "))
-                    return (_Command = new string[1] {Message});
-                return _Command = Message.Split(' ');
+                    return (_CommandArray = new string[1] {Message});
+                return _CommandArray = Message.Split(' ');
             } }
+        /// <summary>
+        /// The first part of the message (split every space symbol) in lowercase. Example: "!Play Testsound 3" -> "!play"
+        /// </summary>
+        public string Command { get { if (CommandArray.Length > 0) return CommandArray[0].ToLower(); else return ""; } }
         public Permissionlevels Permissionlevel { get; private set; }
         public bool IsSubscriber { get; private set; } = false;
         /// <summary>

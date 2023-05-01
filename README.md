@@ -29,7 +29,9 @@ A C# library with the goal to enable easy access to the Twitch services. Scalabi
 
 ## Usage/Examples
 
-- **How to create an User Access or App Access Token?** [How does Twitch's Token system work?](https://dev.twitch.tv/docs/authentication) - Chech out my YouTube Video on how Twitch Tokens work [here](https://www.youtube.com/watch?v=5Bd1EC7541k) (english subtitles are available).
+- **How to create an User Access or App Access Token?** 
+
+[How does Twitch's Token system work?](https://dev.twitch.tv/docs/authentication) - Chech out my YouTube Video on how Twitch Tokens work [here](https://www.youtube.com/watch?v=5Bd1EC7541k) (english subtitles are available).
 ```c#
 using P90Ez.Twitch;
 
@@ -139,8 +141,11 @@ static void onChatMessage(object source, irc_privsmg args)
 }
 ```
 
+---
+
 - **How to use EventSub?**
-**NOTE**: The credentials must be an User Access Token and contain the scopes reqired by every event.
+
+**NOTE**: The credentials must be an User Access Token and contain the scopes reqired by every event you use.
 ```
 using P90Ez.Twitch.EventSub;
 

@@ -275,5 +275,32 @@ namespace P90Ez.Twitch.API
         }
         #endregion
         #endregion
+
+        #region Broadcaster Live
+        /// <summary>
+        /// Uses the GetStream endpoint to check if the specified broadcaster is live.
+        /// <para>Required scope: -</para>
+        /// </summary>
+        /// <returns>True when broadcaster is live, otherwise false.</returns>
+        public bool IsBroadcasterLive(long BroadcasterID)
+        {
+            var data = Endpoints.GetStreams.Go(credentials, new GetStreams.QueryParams() { user_id = new List<string>() { BroadcasterID.ToString() }, type = "live" }, out bool isSuccess, out int httpStatuscode);
+            
+            if (httpStatuscode != 200 || !isSuccess) //request failed
+            {
+                Logger.Log($"GetStreams returned code {httpStatuscode}", ILogger.Severety.Message);
+                return false;
+            }
+            if(data == null || data.data == null || data.data.Length == 0) return false;
+
+            foreach(var stream in data.data)
+            {
+                if (stream == null) continue;
+                if (stream.user_id == BroadcasterID.ToString()) return true;
+            }
+
+            return false;
+        }
+        #endregion
     }
 }

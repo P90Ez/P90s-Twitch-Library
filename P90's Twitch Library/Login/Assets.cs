@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using P90Ez.Extensions;
+using System.IO;
+using System.Security.Cryptography;
 
 namespace P90Ez.Twitch
 {
@@ -120,6 +122,94 @@ namespace P90Ez.Twitch
                 {
                     new KeyValuePair<string, string>("scope", String.Join(" ", Scopes.ToArray()))
                 }).ReadAsStringAsync().Result;
+        }
+
+        /// <summary>
+        /// Decrypts a file while reading.
+        /// </summary>
+        /// <returns>Decrypted file as string, Emptry string if decryption has failed.</returns>
+        private static string Decrypt(string Filename, string Key, ILogger Logger)
+        {
+            if(Filename == null || Filename == "" || Key == null) return "";
+            if (!File.Exists(Filename)) return "";
+            string decryptedFile = "";
+
+            //modified example from https://learn.microsoft.com/en-us/dotnet/standard/security/decrypting-data
+            try
+            {
+                using (FileStream fileStream = new FileStream(Filename, FileMode.Open))
+                {
+                    using (Aes aes = Aes.Create())
+                    {
+                        byte[] iv = new byte[aes.IV.Length]; //initialization vector for symetric algorithm
+                        int numBytesToRead = aes.IV.Length;
+                        int numBytesRead = 0;
+                        while (numBytesToRead > 0) //read iv
+                        {
+                            int n = fileStream.Read(iv, numBytesRead, numBytesToRead);
+                            if (n == 0) break;
+
+                            numBytesRead += n;
+                            numBytesToRead -= n;
+                        }
+
+                        var bytekey = Encoding.UTF8.GetBytes(Key); //convert key to byte array
+
+                        //decrypt
+                        using (CryptoStream cryptoStream = new CryptoStream(fileStream, aes.CreateDecryptor(bytekey, iv), CryptoStreamMode.Read))
+                        {
+                            using (StreamReader decryptReader = new StreamReader(cryptoStream))
+                            {
+                                decryptedFile = decryptReader.ReadToEndAsync().Result; //read decrypted stream
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"The decryption failed. {ex.Message}", ILogger.Severety.Warning);
+            }
+
+            return decryptedFile;
+        }
+
+        /// <summary>
+        /// Encrypts a file while writing the provided data.
+        /// </summary>
+        private void Encrypt(string Filename, string Data, string Key, ILogger Logger)
+        {
+            if (Filename == null || Filename == "" || Data == null || Data == "" || Key == null) return;
+
+            //modified example from https://learn.microsoft.com/en-us/dotnet/standard/security/encrypting-data
+            try
+            {
+                using (FileStream fileStream = new FileStream(Filename, FileMode.OpenOrCreate))
+                {
+                    using (Aes aes = Aes.Create())
+                    {
+                        aes.Key = Encoding.UTF8.GetBytes(Key); //convert key to byte array
+
+                        byte[] iv = aes.IV;
+                        fileStream.Write(iv, 0, iv.Length); //write generated initialization vector to file.
+
+                        using (CryptoStream cryptoStream = new CryptoStream(
+                            fileStream,
+                            aes.CreateEncryptor(),
+                            CryptoStreamMode.Write))
+                        {
+                            using (StreamWriter encryptWriter = new StreamWriter(cryptoStream))
+                            {
+                                encryptWriter.WriteLine(Data); //writing encrypted data to file.
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"The encryption failed. {ex.Message}", ILogger.Severety.Warning);
+            }
         }
         #endregion
         #region HttpRequests

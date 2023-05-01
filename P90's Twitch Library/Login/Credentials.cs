@@ -38,6 +38,11 @@ namespace P90Ez.Twitch
             [JsonProperty("client_id")]
             public string ClientId { get; internal set; }
             /// <summary>
+            /// Your (Twitch) app's client secret. Is ONLY used for automatically refreshing the token.
+            /// </summary>
+            [JsonProperty("client_secret")]
+            internal string ClientSecret { get; set; }
+            /// <summary>
             /// Only provided with a User Acces Token
             /// </summary>
             [JsonProperty("login")]
@@ -71,8 +76,16 @@ namespace P90Ez.Twitch
             /// </summary>
             [JsonIgnore]
             public DateTime ValidationDate;
+            /// <summary>
+            /// Type of token. Depends on the method used to obtain the token.
+            /// </summary>
             [JsonIgnore]
             public TokenType TokenType { get; internal set; }
+            /// <summary>
+            /// Method used to generate Token.
+            /// </summary>
+            [JsonIgnore]
+            internal TokenGenType TokenGenType { get; set; }
 
             /// <summary>
             /// DO NOT USE THIS CONSTRUCTOR - Constructor for Json Converter
@@ -123,6 +136,12 @@ namespace P90Ez.Twitch
             /// Is an User Acces Token / Only User Acces Tokens are allowed (is the case as soon as scopes are requiered)
             /// </summary>
             UserAccessToken
+        }
+        internal enum TokenGenType
+        {
+            ImplicitGrantFlow,
+            AuthorizationCodeFlow,
+            ClientCredentialsGrantFlow,
         }
     }
 }
