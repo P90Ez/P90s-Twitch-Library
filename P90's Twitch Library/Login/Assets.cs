@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net;
-using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using P90Ez.Extensions;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace P90Ez.Twitch
 {
@@ -124,46 +124,45 @@ namespace P90Ez.Twitch
                 }).ReadAsStringAsync().Result;
         }
 
+        #region File Encryption / Decryption
+        private static int EncryptionKeySize = 256;
+        private static int EncryptionBlockSize = 128;
         /// <summary>
-        /// Decrypts a file while reading.
+        /// Decrypts a file while reading. - uses AES256 to decrypt data
         /// </summary>
-        /// <returns>Decrypted file as string, Emptry string if decryption has failed.</returns>
-        private static string Decrypt(string Filename, string Key, ILogger Logger)
+        /// <returns>Decrypted file as string, Empty string if decryption has failed.</returns>
+        private static string Decrypt(string Filename, string Password, ILogger Logger)
         {
-            if(Filename == null || Filename == "" || Key == null) return "";
+            if (Filename == null || Filename == "" || Password == null) return "";
             if (!File.Exists(Filename)) return "";
             string decryptedFile = "";
 
-            //modified example from https://learn.microsoft.com/en-us/dotnet/standard/security/decrypting-data
+            //generating key and initialization vector from password
+            Rfc2898DeriveBytes Key = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(Password), Encoding.UTF8.GetBytes("keykeykeykey"), 1000);
+            Rfc2898DeriveBytes IV = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(Password), Encoding.UTF8.GetBytes("iviviviviviv"), 1000);
+
             try
             {
-                using (FileStream fileStream = new FileStream(Filename, FileMode.Open))
+                byte[] fromFile = File.ReadAllBytes(Filename);
+                using (MemoryStream memstream = new MemoryStream())
                 {
                     using (Aes aes = Aes.Create())
                     {
-                        byte[] iv = new byte[aes.IV.Length]; //initialization vector for symetric algorithm
-                        int numBytesToRead = aes.IV.Length;
-                        int numBytesRead = 0;
-                        while (numBytesToRead > 0) //read iv
+                        //set key and iv
+                        aes.KeySize = EncryptionKeySize;
+                        aes.Key = Key.GetBytes(EncryptionKeySize / 8);
+                        aes.BlockSize = EncryptionBlockSize;
+                        aes.IV = IV.GetBytes(EncryptionBlockSize / 8);
+
+                        using (CryptoStream cryptoStream = new CryptoStream(
+                            memstream,
+                            aes.CreateDecryptor(),
+                            CryptoStreamMode.Write))
                         {
-                            int n = fileStream.Read(iv, numBytesRead, numBytesToRead);
-                            if (n == 0) break;
-
-                            numBytesRead += n;
-                            numBytesToRead -= n;
-                        }
-
-                        var bytekey = Encoding.UTF8.GetBytes(Key); //convert key to byte array
-
-                        //decrypt
-                        using (CryptoStream cryptoStream = new CryptoStream(fileStream, aes.CreateDecryptor(bytekey, iv), CryptoStreamMode.Read))
-                        {
-                            using (StreamReader decryptReader = new StreamReader(cryptoStream))
-                            {
-                                decryptedFile = decryptReader.ReadToEndAsync().Result; //read decrypted stream
-                            }
+                            cryptoStream.Write(fromFile, 0, fromFile.Length); //decrypting
                         }
                     }
+                    decryptedFile = new UTF8Encoding(false).GetString(memstream.ToArray()); //convert decrypted bytes to string
                 }
             }
             catch (Exception ex)
@@ -173,37 +172,41 @@ namespace P90Ez.Twitch
 
             return decryptedFile;
         }
-
         /// <summary>
-        /// Encrypts a file while writing the provided data.
+        /// Encrypts a file while writing the provided data. - uses AES256 to encrypt data
         /// </summary>
-        private void Encrypt(string Filename, string Data, string Key, ILogger Logger)
+        private static void Encrypt(string Filename, string Data, string Password, ILogger Logger)
         {
-            if (Filename == null || Filename == "" || Data == null || Data == "" || Key == null) return;
+            if (Filename == null || Filename == "" || Data == null || Data == "" || Password == null) return;
 
-            //modified example from https://learn.microsoft.com/en-us/dotnet/standard/security/encrypting-data
+            //generating key and initialization vector from password
+            Rfc2898DeriveBytes Key = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(Password), Encoding.UTF8.GetBytes("keykeykeykey"), 1000);
+            Rfc2898DeriveBytes IV = new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(Password), Encoding.UTF8.GetBytes("iviviviviviv"), 1000);
+
             try
             {
-                using (FileStream fileStream = new FileStream(Filename, FileMode.OpenOrCreate))
+                using (MemoryStream memstream = new MemoryStream())
                 {
                     using (Aes aes = Aes.Create())
                     {
-                        aes.Key = Encoding.UTF8.GetBytes(Key); //convert key to byte array
-
-                        byte[] iv = aes.IV;
-                        fileStream.Write(iv, 0, iv.Length); //write generated initialization vector to file.
+                        //set key and iv
+                        aes.KeySize = EncryptionKeySize;
+                        aes.Key = Key.GetBytes(EncryptionKeySize / 8);
+                        aes.BlockSize = EncryptionBlockSize;
+                        aes.IV = IV.GetBytes(EncryptionBlockSize / 8);
 
                         using (CryptoStream cryptoStream = new CryptoStream(
-                            fileStream,
+                            memstream,
                             aes.CreateEncryptor(),
                             CryptoStreamMode.Write))
                         {
                             using (StreamWriter encryptWriter = new StreamWriter(cryptoStream))
                             {
-                                encryptWriter.WriteLine(Data); //writing encrypted data to file.
+                                encryptWriter.WriteLine(Data); //encrypting
                             }
                         }
                     }
+                    File.WriteAllBytes(Filename, memstream.ToArray()); //writing encrypted bytes to file
                 }
             }
             catch (Exception ex)
@@ -211,6 +214,7 @@ namespace P90Ez.Twitch
                 Logger.Log($"The encryption failed. {ex.Message}", ILogger.Severety.Warning);
             }
         }
+        #endregion
         #endregion
         #region HttpRequests
         /// <summary>

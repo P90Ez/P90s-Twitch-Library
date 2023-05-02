@@ -15,7 +15,7 @@ namespace P90Ez.Twitch
             /// <summary>
             /// Is True if Token is valid.
             /// </summary>
-            [JsonIgnore]
+            [JsonProperty("is_success", NullValueHandling = NullValueHandling.Ignore)]
             public bool IsSuccess { get; internal set; } = false;
             /// <summary>
             /// Contains error messages if something has gone wrong. (Report Bugs via Discord (P90Ez#9675) or via Mail office@p90ez.com - THANK YOU!)
@@ -25,12 +25,12 @@ namespace P90Ez.Twitch
             /// <summary>
             /// Generated User/App Acces Token, empty if request failed
             /// </summary>
-            [JsonIgnore]
+            [JsonProperty("auth_token", NullValueHandling = NullValueHandling.Ignore)]
             public string AuthToken { get; internal set; } = "";
             /// <summary>
             /// Only provided by Authorization code grant flow, empty if failed
             /// </summary>
-            [JsonIgnore]
+            [JsonProperty("refresh_token", NullValueHandling = NullValueHandling.Ignore)]
             public string RefreshToken { get; internal set; } = "";
             /// <summary>
             /// Your (Twitch) app's client id
@@ -61,7 +61,7 @@ namespace P90Ez.Twitch
             /// Seconds till the token expires.
             /// </summary>
             [JsonProperty("expires_in")]
-            public int ExpiresIn { get; internal set; }
+            internal int ExpiresIn { get; set; }
             /// <summary>
             /// Date and time when the token expires. - Might be a few seconds off due to processing time.
             /// </summary>
@@ -74,17 +74,17 @@ namespace P90Ez.Twitch
             /// <summary>
             /// DateTime from last token validation. - Might be a few seconds off due to processing time.
             /// </summary>
-            [JsonIgnore]
-            public DateTime ValidationDate;
+            [JsonProperty("validation_date", NullValueHandling = NullValueHandling.Ignore)]
+            public DateTime ValidationDate { get; internal set; }
             /// <summary>
             /// Type of token. Depends on the method used to obtain the token.
             /// </summary>
-            [JsonIgnore]
+            [JsonProperty("token_type")]
             public TokenType TokenType { get; internal set; }
             /// <summary>
             /// Method used to generate Token.
             /// </summary>
-            [JsonIgnore]
+            [JsonProperty("token_gentype")]
             internal TokenGenType TokenGenType { get; set; }
 
             /// <summary>

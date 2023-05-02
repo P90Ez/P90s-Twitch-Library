@@ -246,7 +246,7 @@ namespace P90Ez.Twitch
         /// <param name="Key">The key used to encrypt the file.</param>
         /// <param name="creds">Valid credentials or null if validation and refreshing failed.</param>
         /// <returns>True if credentials are valid. Otherwise false.</returns>
-        public bool LoadFromFile(string Filename, string Key, out Credentials creds, ILogger Logger = null)
+        public static bool LoadFromFile(string Filename, string Key, out Credentials creds, ILogger Logger = null)
         {
             creds = null;
             if(Filename == null || Filename == "") return false;
@@ -296,7 +296,7 @@ namespace P90Ez.Twitch
         /// <param name="Filename">Path to store the file.</param>
         /// <param name="Key">Key to encrypt the file with. Use this key to decrypt the file again.</param>
         /// <param name="creds"></param>
-        public void StoreToFile(string Filename, string Key, Credentials creds, ILogger Logger = null)
+        public static void StoreToFile(string Filename, string Key, Credentials creds, ILogger Logger = null)
         {
             if (Filename == null || Filename == "" || Key == null) return;
 

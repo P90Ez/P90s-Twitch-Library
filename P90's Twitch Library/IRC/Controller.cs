@@ -95,7 +95,7 @@ namespace P90Ez.Twitch.IRC
 
             if (credentials == null) throw new Exceptions.ArgumentNullException(nameof(credentials), Logger);
             if (!credentials.IsSuccess) throw new IncorrectTokenException(Logger);
-            if (credentials.IsCorrectTokenType(RequieredTokenType)) throw new WrongTokenTypeException(RequieredTokenType, credentials.TokenType, "IRC controller", Logger);
+            if (!credentials.IsCorrectTokenType(RequieredTokenType)) throw new WrongTokenTypeException(RequieredTokenType, credentials.TokenType, "IRC controller", Logger);
 
             Nick = credentials.UserLogin.ToLower();
             Channel = channel.ToLower();
