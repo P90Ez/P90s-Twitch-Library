@@ -68,8 +68,9 @@ namespace P90Ez.Twitch.IRC
         private StreamReader _reader;
         private StreamWriter _writer;
         private CancellationTokenSource _cancelToken;
+        private TaskCompletionSource<bool> ControllerReady = new TaskCompletionSource<bool>();
         /// <summary>
-        /// Set to True to Display IRC Message in the Console [Deprecated - will be removed in the future - please use the Logger!]
+        /// Set to True to Display IRC Message in the Logger
         /// </summary>
         public bool Debug = false;
         internal ILogger Logger { get; }
@@ -123,7 +124,7 @@ namespace P90Ez.Twitch.IRC
         public void Stop()
         {
             _cancelToken.Cancel();
-            IRCWriter("PART", true);
+            IRCWriter("PART", true, true);
         }
 #endregion
         private void _Loop()
@@ -137,22 +138,25 @@ namespace P90Ez.Twitch.IRC
                     using (_reader = new StreamReader(_stream))
                     using (_writer = new StreamWriter(_stream))
                     {
-                        IRCWriter($"PASS {OAuth}");
-                        IRCWriter($"NICK {Nick}");
-                        IRCWriter("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"); //request tags, commands, membership
+                        IRCWriter($"PASS {OAuth}", true);
+                        IRCWriter($"NICK {Nick}", true);
+                        IRCWriter("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership", true); //request tags, commands, membership
                         string inputline = "";
                         while (!_cancelToken.IsCancellationRequested && (inputline = _reader.ReadLine()) != null)
                         {
                             if(Debug)
-                                Console.WriteLine("-> " + inputline);
+                                Logger.Log("-> " + inputline, ILogger.Severety.Message);
                             string[] splitinput = inputline.Split(' '); //split string on each space character
                             if (splitinput[0] == "PING")
-                                IRCWriter("PONG :tmi.twitch.tv");
+                                IRCWriter("PONG :tmi.twitch.tv", true);
                             else if (splitinput.Length > 1 && splitinput[1] == "001") //001 = successfully connected -> join chat
-                                IRCWriter($"JOIN #{Channel}");
-                            else if(splitinput.Length >= 4 && splitinput[1].Contains("tmi.twitch.tv"))
-                                switch(splitinput[2])
                             {
+                                IRCWriter($"JOIN #{Channel}", true);
+                                ControllerReady.TrySetResult(true);
+                            }
+                            else if (splitinput.Length >= 4 && splitinput[1].Contains("tmi.twitch.tv"))
+                                switch (splitinput[2])
+                                {
                                     case "CLEARCHAT":
                                         OnCLEARCHAT(inputline);
                                         break;
@@ -183,7 +187,7 @@ namespace P90Ez.Twitch.IRC
                                     case "WHISPER":
                                         OnWHISPER(inputline);
                                         break;
-                            }
+                                }
                             else
                                 switch (splitinput[1])
                                 {
@@ -205,11 +209,10 @@ namespace P90Ez.Twitch.IRC
                 }
                 catch (Exception ex)
                 {
+                    if(ControllerReady.Task.IsCompleted)
+                        ControllerReady = new TaskCompletionSource<bool>();
                     if (ex != null && ex.Message != null)
                         Logger.Log(ex.Message, ILogger.Severety.Critical);
-
-                    if (Debug && ex?.Message != null)
-                        Console.WriteLine(ex.Message);
                     Thread.Sleep(5000); //When an error has occurred, wait 5 seconds and try again
                 }
             } while (true);
@@ -383,31 +386,31 @@ namespace P90Ez.Twitch.IRC
         /// Sends an IRC message to the server. Read the documentation before using this method! https://dev.twitch.tv/docs/irc/send-receive-messages#replying-to-a-chat-message (note: do NOT set overridecancel to true, unless you know what you are doing)
         /// </summary>
         /// <param name="text">raw IRC message</param>
-        internal void IRCWriter(string text, bool overridecancel = false)
+        internal void IRCWriter(string text, bool SkipWait = false, bool overridecancel = false)
         {
             if (text != "" && (overridecancel || !_cancelToken.IsCancellationRequested))
                 try
                 {
+                    if(!SkipWait)
+                        ControllerReady.Task.Wait(); //wait until controller is ready
                     _writer.WriteLine(text);
                     _writer.Flush();
                     if(Debug)
-                        Console.WriteLine("<- " + text); //Ausgangsnachricht in der Console loggen
+                        Logger.Log("<- " + text, ILogger.Severety.Message);
                 }
                 catch (Exception ex)
                 {
-                    if(Debug)
-                        Console.WriteLine(ex.Message);
+                    Logger.Log(ex.Message, ILogger.Severety.Critical);
                 }
         }
         /// <summary> 
         /// Sends a message into the chat, correct format already applied.
         /// </summary>
         /// <param name="text">Chatmessage</param>
-        /// <param name="ChannelName">Name of the channel</param>
-        public void ChatWriter(string text, string ChannelName)
+        public void ChatWriter(string text)
         {
-            if (text != "")
-                IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :{text}"); //Format laut Twitch Dokumentation
+            if (text == "") return;
+            IRCWriter($"PRIVMSG #{Channel} :{text}"); //format as described in Twitch's Docs
         }
         /// <summary>
         /// Sends a direct reply to a message, correct format already applied.
@@ -415,10 +418,10 @@ namespace P90Ez.Twitch.IRC
         /// <param name="text">Chatmessage</param>
         /// <param name="parent_message_id">ID of the message you want to reply to.</param>
         /// <param name="ChannelName">Name of the channel</param>
-        public void ReplyChatWriter(string text, string parent_message_id, string ChannelName)
+        public void ReplyChatWriter(string text, string parent_message_id)
         {
             if (text != "" && parent_message_id != "")
-                IRCWriter($"@reply-parent-msg-id={parent_message_id} PRIVMSG #{ChannelName} :{text}");
+                IRCWriter($"@reply-parent-msg-id={parent_message_id} PRIVMSG #{Channel} :{text}");
         }
         #region CHATCOMMANDS
         /// <summary>
@@ -535,11 +538,11 @@ namespace P90Ez.Twitch.IRC
             IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/marker {description}");
         }
         /// <summary>
-        /// [DEPRECATED] Removes the color that typically appears after your chat name and italicizes the chat message’s text. The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
+        /// Removes the color that typically appears after your chat name and italicizes the chat message’s text. The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.
         /// </summary>
-        public void MeMessage(string ChannelName, string message)
+        public void MeMessage(string message)
         {
-            IRCWriter($"PRIVMSG #{ChannelName.ToLower()} :/me {message}");
+            IRCWriter($"PRIVMSG #{Channel} :/me {message}");
         }
         /// <summary>
         /// [DEPRECATED] Gives a user moderator privileges. The bot needs permission to perform this action (channel:moderate)! The Twitch IRC server replies with a NOTICE message indicating whether the command succeeded or failed.

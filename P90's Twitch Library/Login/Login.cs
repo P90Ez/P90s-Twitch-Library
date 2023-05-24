@@ -234,6 +234,7 @@ namespace P90Ez.Twitch
                 creds.AuthToken = tempcreds.access_token;
                 creds.RefreshToken = tempcreds.refresh_token;
                 creds.TokenType = TokenType.UserAccessToken;
+                creds.TokenGenType = TokenGenType.AuthorizationCodeFlow;
             }
             return creds;
         }
@@ -268,11 +269,11 @@ namespace P90Ez.Twitch
             {
                 if (creds.ClientSecret != null || creds.ClientSecret != "")
                 {
-                    if (creds.TokenGenType == TokenGenType.ClientCredentialsGrantFlow && creds.RefreshToken != null && creds.RefreshToken != "")
+                    if (creds.TokenGenType == TokenGenType.AuthorizationCodeFlow && creds.RefreshToken != null && creds.RefreshToken != "")
                     {
                         creds = RefreshToken(creds, Logger);
                     }
-                    else if (creds.TokenGenType == TokenGenType.AuthorizationCodeFlow)
+                    else if (creds.TokenGenType == TokenGenType.ClientCredentialsGrantFlow)
                     {
                         creds = ClientCredentialsGrantFlow(creds.ClientId, creds.ClientSecret, Logger);
                     }

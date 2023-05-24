@@ -341,9 +341,9 @@ namespace P90Ez.Twitch.IRC
         public void Reply(string message)
         {
             if (ParentMessageID == null)
-                parentController.ReplyChatWriter(message, MessageID, ChannelName);
+                parentController.ReplyChatWriter(message, MessageID);
             else
-                parentController.ReplyChatWriter(message, ParentMessageID, ChannelName);
+                parentController.ReplyChatWriter(message, ParentMessageID);
         }
         /// <summary>
         /// Send a message to the chat without replying directly to the original message.
@@ -351,7 +351,7 @@ namespace P90Ez.Twitch.IRC
         /// <param name="message"></param>
         public void SendMessage(string message)
         {
-            parentController.ChatWriter(message, ChannelName);
+            parentController.ChatWriter(message);
         }
         private void UpdatePermissionlevel(Permissionlevels level)
         {

@@ -7,6 +7,9 @@
     <PackageId>P90sTwitchLibrary</PackageId>
     <Authors>P90Ez</Authors>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <AssemblyVersion>$(PackageVersion)</AssemblyVersion>
+    <FileVersion>$(PackageVersion)</FileVersion>
+    <Version>0.2.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
