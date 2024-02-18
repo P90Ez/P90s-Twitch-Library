@@ -194,7 +194,7 @@ namespace P90Ez.Twitch.EventSub
             {
                 if (message == null || message.Metadata == null) return;
                 
-                if (DateTime.Now.Subtract(message.Metadata.TimeStamp).TotalMinutes >= 10) return; //prevent replay attacks - making sure the message isn't older than 10 minutes
+                if (DateTime.Now.Subtract(message.Metadata.TimeStamp.ToLocalTime()).TotalMinutes >= 10) return; //prevent replay attacks - making sure the message isn't older than 10 minutes
                 
                 if (RecievedMessageIDs.Contains(message.Metadata.ID)) return; //prevent replay attacks - making sure the message wasn't already processed. (Twitch also sends messages multiple times occasionally)
                 RecievedMessageIDs.Add(message.Metadata.ID);

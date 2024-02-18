@@ -10,6 +10,7 @@ using P90Ez.Extensions;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace P90Ez.Twitch
 {
@@ -35,7 +36,7 @@ namespace P90Ez.Twitch
         /// </summary>
         /// <param name="redirecturl"></param>
         /// <returns>returns the full redirected url</returns>
-        private static string Listener(string redirecturl)
+        private static async Task<string> Listener(string redirecturl)
         {
             if (redirecturl == null) return null;
             if (redirecturl.Length == 0) return null;
@@ -46,11 +47,11 @@ namespace P90Ez.Twitch
             server.Start(); //Start server
             do
             {
-                HttpListenerContext context = server.GetContext(); //Get the request
+                HttpListenerContext context = await server.GetContextAsync(); //Get the request
                 if (context.Request.Url.ToString() == redirecturl) //Thanks twitch, this is just pain.
                                                                    //This next line sends a response with a script, to make another request with the URI fragment parsed to a proper "readable" url (URI fragments are usualy not part of a request, so we need another way to get to our information)
                     SendHttpResponse("<!DOCTYPE html>\r\n<html>\r\n<body onload=\"const Http = new XMLHttpRequest(); Http.open('GET','" + redirecturl + "?' + window.location.hash.substring(1)); Http.send(); Http.onreadystatechange = function(){if(this.readyState==4 && this.status == 200) {window.close();}}\">\r\n</html>", context.Response); //there could be a more elegant way to do this
-                else
+                else if(context.Request.Url.ToString() != redirecturl + "favicon.ico") //prevent favicon request to be processed 
                 {
                     SendHttpResponse("<body onload=\"window.close();\">", context.Response); //Send response to close browser tab
                     return context.Request.Url.ToString(); //returns url with params

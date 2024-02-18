@@ -417,7 +417,6 @@ namespace P90Ez.Twitch.IRC
         /// </summary>
         /// <param name="text">Chatmessage</param>
         /// <param name="parent_message_id">ID of the message you want to reply to.</param>
-        /// <param name="ChannelName">Name of the channel</param>
         public void ReplyChatWriter(string text, string parent_message_id)
         {
             if (text != "" && parent_message_id != "")

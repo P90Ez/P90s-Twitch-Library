@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Primitives;
+﻿//#define Debug
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using P90Ez.Extensions;
 using System;
@@ -34,9 +35,18 @@ namespace P90Ez.Twitch
                 $"&redirect_uri={redirecturl}" +
                 $"&{GenerateScopes(Scopes)}" +
                 $"&state={state}";
+            var ListenerTask = Listener(redirecturl);                       //Start listener (http server)
             OpenBrowser(url);                                               //Open URL in browser
-            var paras = GetUrlParams(Listener(redirecturl));                //gets & parses url parameters after user authorization
-            if (!ImplicitGrantFlow_CheckParas(paras, state)) return new Credentials("Para Check failed", Logger);   //check parameters
+            var paras = GetUrlParams(ListenerTask.Result);                  //gets & parses url parameters after user authorization
+            if (!ImplicitGrantFlow_CheckParas(paras, state))                //check parameters
+            {
+#if Debug
+                Logger.Log($"ImplicitGrantFlow: ParaCheck failed! Paras: {paras.ToJsonString()}, State: {state}", ILogger.Severety.Critical);
+#else
+                Logger.Log("Parameter check failed! Recieved parameters did not match expected parameters!", ILogger.Severety.Critical);
+#endif
+                return new Credentials("Para Check failed", Logger);
+            }
             var creds = ValidateToken(paras["access_token"], "Bearer", Logger);                                     //Checks if generated token is valid
             if (creds.IsSuccess)
             {                          
@@ -59,7 +69,7 @@ namespace P90Ez.Twitch
             if (!paras.ContainsKey("token_type") || paras["token_type"] == "") return false;
             return true;
         }
-        #endregion
+#endregion
         #region AuthorizationCodeFlow
         /// <summary>
         /// (Front End Part) 
@@ -81,11 +91,16 @@ namespace P90Ez.Twitch
                 $"&redirect_uri={redirecturl}" +
                 $"&{GenerateScopes(Scopes)}" +
                 $"&state={state}";
-            OpenBrowser(url);                                                       //Open URL in browser
-            var paras = GetUrlParams(Listener(redirecturl));                        //gets & parses url parameters after user authorization
-            if (!AuthorizationCodeFlow_CheckParas(paras, state))                    //check parameters - These parameters only contain a code. This code has to be used in the next step to get an acces token.
+            var ListenerTask = Listener(redirecturl);                       //Start listener (http server)
+            OpenBrowser(url);                                               //Open URL in browser
+            var paras = GetUrlParams(ListenerTask.Result);                  //gets & parses url parameters after user authorization
+            if (!AuthorizationCodeFlow_CheckParas(paras, state))            //check parameters - These parameters only contain a code. This code has to be used in the next step to get an acces token.
             {
-                Logger.Log("Parameter check failed!", ILogger.Severety.Critical);
+#if Debug
+                Logger.Log($"AuthorizationCodeFlow: ParaCheck failed! Paras: {paras.ToJsonString()}, State: {state}", ILogger.Severety.Critical);
+#else
+                Logger.Log("Parameter check failed! Recieved parameters did not match expected parameters!", ILogger.Severety.Critical);
+#endif
                 return null;
             }
             return paras["code"];
@@ -106,7 +121,15 @@ namespace P90Ez.Twitch
             //Create request body - parameters can be found in the documentation
             var application = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("client_id", ClientId), new KeyValuePair<string, string>("client_secret", ClientSecret), new KeyValuePair<string, string>("code", code), new KeyValuePair<string, string>("grant_type", "authorization_code"), new KeyValuePair<string, string>("redirect_uri", redirecturl) };
             var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", application, HttpMethod.Post);                     //Send request to optain the acces token
-            if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed", Logger);                              //Check if request is succesful
+            if (!tokenresponse.IsSuccessStatusCode) //Check if request is succesful
+            {
+#if Debug
+                Logger.Log($"AuthorizationCodeFlow: Code {tokenresponse.StatusCode}, {tokenresponse.ReasonPhrase}", ILogger.Severety.Critical);
+#else
+                Logger.Log("OAuth generation request failed!", ILogger.Severety.Critical);
+#endif
+                return new Credentials("OAuth generation request failed", Logger);
+            }
             var tempcreds = JsonConvert.DeserializeObject<AuthorizationCodeGrantFlow_Creds>(tokenresponse.Content.ReadAsStringAsync().Result);      //Deserialize data
             var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type, Logger);                                                        //Checks if generated token is valid
             if (creds.IsSuccess)
@@ -156,8 +179,16 @@ namespace P90Ez.Twitch
 
             //Create request body - parameters can be found in the documentation
             var application = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("client_id", ClientId), new KeyValuePair<string, string>("client_secret", ClientSecret), new KeyValuePair<string, string>("grant_type", "client_credentials") };
-            var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", application, HttpMethod.Post);                     //Send request
-            if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed", Logger);                              //Check if request is succesful
+            var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", application, HttpMethod.Post);     //Send request
+            if (!tokenresponse.IsSuccessStatusCode)                                                                                 //Check if request is succesful
+            {
+#if DEBUG
+                Logger.Log($"ClientCredentialsGrantFlow: Code {tokenresponse.StatusCode}, {tokenresponse.ReasonPhrase}", ILogger.Severety.Critical);
+#else
+                Logger.Log("OAuth generation request failed!", ILogger.Severety.Critical);
+#endif
+                return new Credentials("OAuth generation request failed", Logger);
+            }
             var tempcreds = JsonConvert.DeserializeObject<ClientCredentialsGrantFlow_Creds>(tokenresponse.Content.ReadAsStringAsync().Result);      //Deserialize data
             var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type, Logger);                                                        //Checks if generated token is valid
             if (creds.IsSuccess)
@@ -225,14 +256,23 @@ namespace P90Ez.Twitch
             if (InCreds.ClientId == null || InCreds.ClientId == "") return new Credentials("Client Id is null or empty", Logger);
             
             var tokenresponse = HeaderlessURLEncodedRequest("https://id.twitch.tv/oauth2/token", new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("grant_type", "refresh_token"), new KeyValuePair<string, string>("refresh_token", InCreds.RefreshToken), new KeyValuePair<string, string>("client_id", InCreds.ClientId), new KeyValuePair<string, string>("client_secret", InCreds.ClientSecret) }, HttpMethod.Post);
-            if (!tokenresponse.IsSuccessStatusCode) return new Credentials("OAuth Generation Request Failed", Logger);                          //Check if request is succesful
-            
+            if (!tokenresponse.IsSuccessStatusCode) //Check if request is succesful
+            {
+#if DEBUG
+                Logger.Log($"RefreshToken: Code {tokenresponse.StatusCode}, {tokenresponse.ReasonPhrase}", ILogger.Severety.Critical);
+#else
+                Logger.Log("OAuth generation request failed!", ILogger.Severety.Critical);
+#endif
+                return new Credentials("OAuth generation request failed", Logger);
+            }
+
             var tempcreds = JsonConvert.DeserializeObject<AuthorizationCodeGrantFlow_Creds>(tokenresponse.Content.ReadAsStringAsync().Result);  //Deserialize data
             var creds = ValidateToken(tempcreds.access_token, tempcreds.token_type, Logger);                                                    //Checks if generated token is valid
             if (creds.IsSuccess)
             {
                 creds.AuthToken = tempcreds.access_token;
                 creds.RefreshToken = tempcreds.refresh_token;
+                creds.ClientSecret = InCreds.ClientSecret;
                 creds.TokenType = TokenType.UserAccessToken;
                 creds.TokenGenType = TokenGenType.AuthorizationCodeFlow;
             }
