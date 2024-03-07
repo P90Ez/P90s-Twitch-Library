@@ -12,6 +12,14 @@ A C# library with the goal to enable easy access to the Twitch services. Scalabi
 [<img align="right" alt="P90Ez | YouTube" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/youtube.svg" />](https://p90ez.com/abop90code)
 [<img align="right" alt="P90Ez | PayPal" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/paypal.svg" />](https://paypal.me/p90ez)
 
+## Dev branch - information & changes
+### **Not** for production! None of the commits to this branch guarantee a working enviroment.
+
+### Upcoming changes:
+
+- General restructuring - usage is subject to change!
+  - API Endpoints will be the first part to recieve a restructuring - class diagramms will follow soon (old endpoints will still work for some time)
+
 ## Features
 
 - Easy to use (Auth) **Token Generator**. (see *[Login](https://github.com/P90Ez/P90s-Twitch-Library/blob/master/P90's%20Twitch%20Library/Login/Login.cs)*)
